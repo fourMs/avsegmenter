@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "concert-segmenter"
+version = "0.1.0"
+description = "Segment concert videos into pieces, applause and talk; describe each piece; export a web timeline."
+requires-python = ">=3.10"
+dependencies = [
+  "numpy", "scipy", "soundfile", "librosa",
+  "musicalgestures>=1.32", "ambiscape>=0.49", "musiscape>=0.10",
+]
+
+[project.optional-dependencies]
+ml = ["panns-inference", "torch", "ultralytics"]
+speech = ["faster-whisper"]
+
+[project.scripts]
+concert-segment = "concert_segmenter.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["concert_segmenter*"]
+
+[tool.setuptools.package-data]
+concert_segmenter = ["web/*"]

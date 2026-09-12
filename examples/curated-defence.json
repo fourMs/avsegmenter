@@ -1,0 +1,15 @@
+{
+ "license": "not stated (UiO public defence recording; internal use until cleared)",
+ "rights_holder": "Department of Musicology (IMV), University of Oslo",
+ "privacy": {
+  "level": "yellow",
+  "note": "public event; candidate, committee and audience visible and audible; check consent before publication"
+ },
+ "speakers": {
+  "S0": "Bálint Laczkó (candidate)",
+  "S3": "Anja Nylund Hagen (chair)",
+  "S1": "Anna Xambó Sedó (first opponent)",
+  "S2": "Paul Vickers (second opponent)"
+ },
+ "notes": "Speaker names assigned by hand to the clusters of this run (ids change if the clustering is re-run)."
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concert segments</title>
+<style>
+  :root{--bg:#f3f5f8;--fg:#171a21;--muted:#5b6473;--card:#ffffff;--border:#d7dbe3;--kbd:#e8ebf0;color-scheme:light}
+  :root[data-theme="dark"]{--bg:#0b1220;--fg:#e5e7eb;--muted:#9ca3af;--card:#1f2937;--border:#374151;--kbd:#1f2937;color-scheme:dark}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--fg:#e5e7eb;--muted:#9ca3af;--card:#1f2937;--border:#374151;--kbd:#1f2937;color-scheme:dark}}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
+  h1{font-size:20px;margin:0}
+  #theme{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;font:inherit;font-size:12px}
+  video{width:100%;max-height:62vh;background:#000;border-radius:8px}
+  .kbd{color:var(--muted);font-size:12px}
+  kbd{background:var(--kbd);border:1px solid var(--border);border-radius:4px;padding:0 5px;font-family:inherit}
+  footer{color:var(--muted);font-size:12px;margin:24px 0;display:grid;gap:6px;max-width:70ch}
+  footer p{margin:0}
+  .cs-root{--cs-fg:var(--fg);--cs-muted:var(--muted);--cs-card:var(--card);--cs-border:var(--border)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1 id="title">Concert</h1><button id="theme" type="button" aria-label="Toggle light or dark mode">Dark mode</button></div>
+  <video id="video" controls playsinline preload="metadata" src="__VIDEO_SRC__"></video>
+  <div id="segments"></div>
+  <footer>
+    <p class="kbd">Click the strips to jump; a piece starts a moment before its first note. Keys: <kbd>[</kbd>/<kbd>]</kbd> previous/next piece · <kbd>p</kbd>/<kbd>n</kbd> previous/next segment.</p>
+    <p>From the top: camera-cut marks, the videogram (each column is one moment of the picture, averaged across the width), and the waveform (level per second) coloured by segment: blue music, orange talk, green applause, grey silence, purple other. Numbers mark the pieces. Performer counts are read from the widest still shot of each piece; camera pans and zooms are excluded from the motion measure. Untick a class in the legend to fade it.</p>
+    <p id="foot"></p>
+  </footer>
+</div>
+<script>/*__JS__*/</script>
+<script id="cs-data" type="application/json">/*__DATA__*/</script>
+<script>
+  (function () {
+    const root = document.documentElement, btn = document.getElementById('theme');
+    let saved = null; try { saved = localStorage.getItem('cs-theme'); } catch (e) {}
+    if (saved) root.dataset.theme = saved;
+    const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    const label = () => { btn.textContent = isDark() ? 'Light mode' : 'Dark mode'; };
+    btn.addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('cs-theme', root.dataset.theme); } catch (e) {} label(); });
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', label); label();
+  })();
+  const data = JSON.parse(document.getElementById('cs-data').textContent);
+  document.title = data.title + ' – segments';
+  document.getElementById('title').textContent = data.title;
+  document.getElementById('foot').textContent = 'Analysis: PANNs/AudioSet tags via ambiscape, song finder + music descriptors via musiscape, motion + audio extraction via musicalgestures (MGT). Instrument, genre, performer-count and rights fields are automatic estimates.';
+  ConcertSegments.mount({ video: document.getElementById('video'), data, container: document.getElementById('segments'), assetBase: '' });
+</script>
+</body>
+</html>
