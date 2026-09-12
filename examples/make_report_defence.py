@@ -1,6 +1,6 @@
 """Shareable report for the defence recording (talk profile)."""
 from pathlib import Path
-from concert_segmenter.report import build_report
+from av_segmenter.report import build_report
 QA = [
     ("Parts of the event", "Yes", "yes",
      "Boundaries from silences longer than 90 s (breaks), applause bursts, and the first sustained turn of a new major voice. The four detected parts match the four hand-cut recordings (trial lecture, thesis introduction, first opponent, second opponent) to within a minute or two; the chair's opening words attach to the part they introduce."),

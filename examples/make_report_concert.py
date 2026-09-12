@@ -1,6 +1,6 @@
 """Build the shareable report for this concert (IMV-specific wording lives here, the generator is generic)."""
 from pathlib import Path
-from concert_segmenter.report import build_report
+from av_segmenter.report import build_report
 
 QA = [
     ("Music / clapping / talking", "Yes", "yes",

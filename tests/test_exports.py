@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from lxml import etree
 
-from concert_segmenter.exports import build_record, write_all
-from concert_segmenter.exports.validate import validate_all, validate_bag
+from av_segmenter.exports import build_record, write_all
+from av_segmenter.exports.validate import validate_all, validate_bag
 
 
 @pytest.fixture

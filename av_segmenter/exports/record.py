@@ -106,7 +106,7 @@ def build_record(analysis_dir: Path, video_path: Path | None = None, base_url: s
     tools = d.get("tools") or {}
     provenance = {
         "generated": d.get("generated"), "record_built": _dt.datetime.now().isoformat(timespec="seconds"),
-        "software": [{"name": "concert-segmenter", "version": __import__("concert_segmenter").__version__},
+        "software": [{"name": "av-segmenter", "version": __import__("av_segmenter").__version__},
                      {"name": "musicalgestures", "version": tools.get("musicalgestures")},
                      {"name": "ambiscape", "version": tools.get("ambiscape")}, {"name": "musiscape", "version": tools.get("musiscape")}],
         "models": [{"name": "PANNs CNN14 (AudioSet)", "use": "segment classes, instruments, genres"},

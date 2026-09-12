@@ -33,7 +33,7 @@ def write_all(analysis_dir: Path, video_path: Path | None = None, base_url: str 
         files = {"export/" + p.name: p for p in out.iterdir() if p.is_file()}
         files.update({"player.html": A / "player.html", "thumbs": A / "thumbs", "videogram.png": A / "videogram.png"})
         info = {"Source-Organization": rec["descriptive"].get("organisation"), "External-Identifier": rec["identifier"],
-                "External-Description": rec["descriptive"]["title"], "Internal-Sender-Description": "concert-segmenter analysis and standard metadata exports",
+                "External-Description": rec["descriptive"]["title"], "Internal-Sender-Description": "av-segmenter analysis and standard metadata exports",
                 "video_sha256": rec["technical"].get("sha256")}
         vp = Path(rec["technical"]["path"])
         make_bag(A / "bag", files, info, video=vp if vp.exists() else None)
