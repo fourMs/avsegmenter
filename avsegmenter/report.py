@@ -114,7 +114,9 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
             f'<dt>Level / motion</dt><dd>{(p.get("level") or {}).get("leq_dbfs", "—")} dBFS Leq · {motion}% of max motion (still camera only)</dd>'
             f'<dt>Song-change cues</dt><dd>{_h(cues)}</dd></dl></div></article>')
 
-    if d.get("profile") == "talk" and d.get("parts"):
+    piece_rows = rows
+    real_parts = [pt for pt in (d.get("parts") or []) if pt.get("kind") == "part"]
+    if len(real_parts) > 1 or not d.get("pieces"):
         rows = []
         spk = (d.get("speakers") or {}).get("speakers") or {}
         name = lambda k: (spk.get(k) or {}).get("name") or k
@@ -135,8 +137,15 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
                 f'<dt>On stage</dt><dd>{perf if perf is not None else "—"}</dd><dt>Camera</dt><dd>{_h(camtxt)}</dd></dl></div></article>')
         speakers_html = "".join(f'<tr><td class="tc">{_h(k)}</td><td>{_h(name(k))}</td><td>{_h(role(k))}</td><td class="tc">{_f(v["total_s"])}</td><td class="tc">{v["turns"]}</td></tr>' for k, v in spk.items())
         speakers_html = f'<section><h2>Speakers</h2><table><tr><td class="dim">id</td><td class="dim">name</td><td class="dim">suggested role</td><td class="dim">speaking</td><td class="dim">turns</td></tr>{speakers_html}</table></section>' if spk else ""
+        parts_html = f'<section><h2>Parts as detected</h2><div class="pieces">{"".join(rows)}</div></section>' if rows else ""
+        rows = piece_rows
     else:
-        speakers_html = ""
+        spk = (d.get("speakers") or {}).get("speakers") or {}
+        name = lambda k: (spk.get(k) or {}).get("name") or k
+        role = lambda k: (spk.get(k) or {}).get("role") or ""
+        speakers_html = ("<section><h2>Speakers</h2><table><tr><td class=\"dim\">id</td><td class=\"dim\">name</td><td class=\"dim\">suggested role</td><td class=\"dim\">speaking</td><td class=\"dim\">turns</td></tr>"
+                         + "".join(f'<tr><td class="tc">{_h(k)}</td><td>{_h(name(k))}</td><td>{_h(role(k))}</td><td class="tc">{_f(v["total_s"])}</td><td class="tc">{v["turns"]}</td></tr>' for k, v in spk.items()) + "</table></section>") if spk else ""
+        parts_html = ""
 
     plan_html = ""
     if d.get("programme"):
@@ -167,8 +176,8 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
     legend = "".join(f'<span><i style="background:{COL[k]}"></i>{n} <b>{_f(summ.get(k, 0))}</b></span>' for k, n in NAMES)
     qa_html = "".join(f'<div><b>{_h(q)}<span class="verdict {cls}">{_h(v)}</span></b><p>{a}</p></div>' for q, v, cls, a in (qa or []))
     n_planned = len(d["programme"]["acts"]) if d.get("programme") else None
-    n_items = len([p for p in d["parts"] if p.get("kind") == "part"]) if d.get("profile") == "talk" and d.get("parts") else len(d["pieces"])
-    facts = (f'<span><b>{_f(dur)}</b> recording</span><span><b>{n_items}</b> {"parts" if d.get("profile") == "talk" else "pieces"}'
+    n_parts = len([p for p in (d.get("parts") or []) if p.get("kind") == "part"]); n_pieces = len(d.get("pieces") or [])
+    facts = (f'<span><b>{_f(dur)}</b> recording</span><span><b>{n_parts}</b> part{"s" if n_parts != 1 else ""} · <b>{n_pieces}</b> piece{"s" if n_pieces != 1 else ""}'
              + (f' of <b>{n_planned}</b> planned acts' if n_planned else "")
              + f'</span><span><b>{len(d["segments"])}</b> segments</span>'
              + f'<span><b>{sum(1 for s in d["segments"] if s["kind"] == "applause")}</b> applause bursts</span>')
@@ -181,6 +190,6 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
             f'<style>{CSS}</style>\n<div class="wrap">\n'
             f'<section><div class="eyebrow">{_h(eyebrow)}</div><h1>{_h(title or d["title"])}</h1><div class="facts">{facts}</div></section>\n'
             f'<section><div class="eyebrow">Timeline</div>{svg}<div class="legend">{legend}</div></section>\n'
-            f'{plan_html}\n{speakers_html}\n<section><h2>{"Parts as detected" if d.get("profile") == "talk" else "Pieces as detected"}</h2><div class="pieces">{"".join(rows)}</div></section>\n{qa_section}\n'
+            f'{plan_html}\n{speakers_html}\n{parts_html}\n' + (f'<section><h2>Pieces as detected</h2><div class="pieces">{"".join(rows)}</div></section>\n' if rows else '') + f'{qa_section}\n'
             f'<footer>Generated {_h(d.get("generated", ""))} · musicalgestures {_h(tools.get("musicalgestures"))} · ambiscape {_h(tools.get("ambiscape"))} '
             f'· musiscape {_h(tools.get("musiscape"))} · every field above is an automatic estimate except the plan itself.</footer>\n</div>\n')

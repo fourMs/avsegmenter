@@ -19,12 +19,27 @@ def detect_persons(video: Path, out_dir: Path, cfg: Config, log=print) -> dict:
     return d
 
 
-def performer_counts(detections: dict, seg: Segment, cfg: Config, cam: dict | None = None) -> dict:
-    """MGT's ``performer_count``: per still framing when camera analysis is available, else the percentile rule.
-    Concerts count the widest framing (everyone is on stage at some point); the talk profile counts the
-    typical framing and switches the raised-stage audience filter off (lecture halls, slide captures)."""
-    geo = {} if cfg.stage_filter else {"head_below": 1.0, "cut_head_below": 1.0}
+def raised_stage(detections: dict, min_conf: float = 0.5, min_height: float = 0.3) -> bool:
+    """Does the picture have a raised stage? Yes when most of the large, confident person boxes have their heads in
+    the upper half of the frame (performers on a stage seen from the hall); no when they sit low (a lecture hall
+    filmed from the back, a slide capture with the speakers along the bottom)."""
+    import numpy as np
+    ys = [b[1] for f in detections.get("frames", []) for b in f["boxes"] if b[4] >= min_conf and (b[3] - b[1]) >= min_height]
+    return bool(ys) and float(np.mean(np.asarray(ys) <= 0.5)) >= 0.5
+
+
+def use_stage_filter(cfg: Config, detections: dict | None) -> bool:
+    if cfg.stage_filter in (True, False):
+        return bool(cfg.stage_filter)
+    return raised_stage(detections) if detections else True
+
+
+def performer_counts(detections: dict, seg: Segment, cfg: Config, cam: dict | None = None, kind: str = "piece") -> dict:
+    """MGT's ``performer_count`` per still framing (else the percentile rule). A *piece* counts the widest framing
+    (everyone is on stage at some point); a *part* of talk counts the typical framing (the widest framings of a
+    lecture are the hall and the slides). The audience filter is on when the detections show a raised stage."""
+    geo = {} if use_stage_filter(cfg, detections) else {"head_below": 1.0, "cut_head_below": 1.0}
     c = performer_count(detections, seg.start, seg.end, camera=cam, min_conf=cfg.person_conf,
-                        stat="typical" if cfg.profile == "talk" else "widest", **geo)
+                        stat="widest" if kind == "piece" else "typical", **geo)
     return {"estimate": c["estimate"], "low": c.get("low"), "high": c.get("high", c["max"]), "frames": c["frames"],
-            "framings": c.get("framings"), "method": c["method"]}
+            "framings": c.get("framings"), "method": c["method"], "stage_filter": not geo}

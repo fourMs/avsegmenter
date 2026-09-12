@@ -156,25 +156,27 @@ def rename_by_time(turns: list[dict]) -> tuple[list[dict], dict]:
 
 
 def suggest_roles(stats: dict, parts: list[dict] | None = None) -> dict:
-    """Heuristic roles for a defence-like event: the first voice is the chair, the most-speaking voice the candidate,
-    the next voices by speaking time the opponents. Only a suggestion; name speakers with a speakers file."""
+    """Heuristic roles from where and how much each voice speaks: the voice heard first is the host or chair,
+    the voice with the most speaking time the main speaker, further voices with minutes of talk are
+    speakers 1, 2, …, the rest brief voices (questions, announcements). A suggestion to be replaced by names
+    in curated.json; in a defence the main speaker is the candidate and the numbered speakers the opponents."""
     if not stats:
         return {}
     by_time = sorted(stats, key=lambda s: -stats[s]["total_s"])
     by_first = sorted(stats, key=lambda s: stats[s]["first_at"])
     roles = {}
-    roles[by_time[0]] = "candidate / main speaker"
+    roles[by_time[0]] = "main speaker"
     chair = by_first[0] if by_first[0] != by_time[0] else (by_first[1] if len(by_first) > 1 else None)
     if chair:
-        roles[chair] = "chair / host"
+        roles[chair] = "host / chair"
     n = 1
     for s in by_time[1:]:
         if s in roles:
             continue
         if stats[s]["total_s"] >= 300:
-            roles[s] = f"opponent / discussant {n}"; n += 1
+            roles[s] = f"speaker {n}"; n += 1
         else:
-            roles[s] = "audience / brief"
+            roles[s] = "brief voice"
     return roles
 
 

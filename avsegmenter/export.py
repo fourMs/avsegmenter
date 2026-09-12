@@ -26,7 +26,7 @@ def write_vtt(data: dict, out: Path) -> Path:
 
 def write_player(data: dict, out: Path, video_src: str) -> Path:
     html = (WEB / "player.html").read_text()
-    js = (WEB / "dam-segments.js").read_text()
+    js = (WEB / "segments-player.js").read_text()
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     html = html.replace("/*__JS__*/", js).replace("/*__DATA__*/", payload).replace("__VIDEO_SRC__", video_src)
     out.write_text(html)

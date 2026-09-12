@@ -1,7 +1,7 @@
 """EBUCore 1.10 XML from the record: the master archival document.
 
 One ``ebuCoreMain`` with ``coreMetadata``: identifiers, title, description, date, type (genre and the
-UiO event type), contributors with roles, coverage (venue), rights, format (technical), and one
+event type), contributors with roles, coverage (venue), rights, format (technical), and one
 ``part`` per structural item (pieces or parts), each with start time and duration. Segments and
 speaker turns go into ``part`` elements of their own type so that a MAM that only reads parts still
 sees the applause and the talk. Provenance travels in ``description`` with type "provenance" and in
@@ -78,7 +78,7 @@ def ebucore_xml(rec: dict) -> bytes:
         _e(_e(core, "date"), "created", None, startDate=desc["date"])
     t = _e(core, "type")
     _e(t, "genre", None, typeLabel=desc.get("genre"), typeDefinition="http://www.ebu.ch/metadata/cs/ebu_ContentGenreCS.xml")
-    _e(t, "objectType", None, typeLabel="Recording of event", typeDefinition="urn:uio:imv:event-type:" + str(desc.get("event_type")))
+    _e(t, "objectType", None, typeLabel="Recording of event", typeDefinition=f"{rec.get('urn_prefix', 'urn:avsegmenter')}:event-type:{desc.get('event_type')}")
 
     # technical
     f = _e(core, "format", formatId="original")
@@ -107,7 +107,7 @@ def ebucore_xml(rec: dict) -> bytes:
     if tech.get("sha256"):
         h = _e(f, "hash"); _e(h, "hashValue", tech["sha256"]); _e(h, "hashFunction", None, typeLabel="SHA-256")
 
-    _e(_e(core, "identifier", typeLabel="uio"), "identifier", rec["identifier"], ns=DC)
+    _e(_e(core, "identifier", typeLabel="local"), "identifier", rec["identifier"], ns=DC)
     if desc.get("language"):
         _e(_e(core, "language", typeLabel="main"), "language", desc["language"], ns=DC)
     if desc.get("venue"):

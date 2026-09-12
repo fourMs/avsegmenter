@@ -57,37 +57,39 @@ def _people(d: dict, curated: dict) -> list[dict]:
         if name and name not in seen:
             seen.add(name)
             role = (st.get("role") or "").split("/")[0].strip() or "speaker"
-            out.append({"name": name, "role": {"candidate": "candidate", "chair": "chair", "opponent": "opponent"}.get(role, "presenter"), "source": "curated-speakers"})
+            out.append({"name": name, "role": {"main": "presenter", "host": "presenter", "speaker": "presenter"}.get(role, "presenter"), "source": "curated-speakers"})
     return out
 
 
 def build_record(analysis_dir: Path, video_path: Path | None = None, base_url: str | None = None,
-                 identifier: str | None = None, with_checksum: bool = True) -> dict:
+                 identifier: str | None = None, with_checksum: bool = True, urn_prefix: str | None = None) -> dict:
+    """The canonical record. ``urn_prefix`` (or ``curated.json: urn_prefix``) namespaces the local identifiers,
+    e.g. ``urn:uio:imv``; the default is ``urn:avsegmenter``."""
     A = Path(analysis_dir)
     d = json.loads((A / "segments.json").read_text())
     curated = load_curated(A)
+    prefix = urn_prefix or curated.get("urn_prefix") or vocab.DEFAULT_URN_PREFIX
     tech = (d.get("video") or {}).get("tech") or {}
     video_file = d["video"]["file"]
     video_path = Path(video_path) if video_path else (A.parent / video_file)
-    ident = identifier or curated.get("identifier") or f"urn:uio:imv:recording:{Path(video_file).stem}"
+    ident = identifier or curated.get("identifier") or f"{prefix}:recording:{Path(video_file).stem}"
     desc = curated.get("description") or d.get("title")
     date = curated.get("date") or (tech.get("created") or "")[:10] or None
     profile = d.get("profile", "concert")
     items = []
-    if profile == "talk" and d.get("parts"):
-        for pt in d["parts"]:
-            items.append({"kind": pt["kind"], "index": pt.get("index"), "title": pt.get("title"), "start": pt["start"], "end": pt["end"],
-                          "speakers": pt.get("speakers"), "people_on_stage": (pt.get("performers") or {}).get("estimate"),
-                          "camera": pt.get("camera"), "plan": pt.get("plan")})
-    else:
-        for pc in d.get("pieces") or []:
-            items.append({"kind": "piece", "index": pc["index"], "title": pc["title"], "start": pc["start"], "end": pc["end"],
-                          "plan": pc.get("plan"), "performers": pc.get("performers"), "ensemble": pc.get("ensemble"),
-                          "instruments": [dict(i, **vocab.audioset_term(i["label"])) for i in pc.get("instruments") or []],
-                          "genres": [dict(g, **vocab.audioset_term(g["label"])) for g in pc.get("genres") or []],
-                          "music": pc.get("music"), "camera": pc.get("camera"), "intro": pc.get("intro"),
-                          "rights": pc.get("rights")})
-    segments = [{"id": s["id"], "kind": s["kind"], "kind_id": vocab.SEGMENT_CLASS_IDS.get(s["kind"]),
+    for pt in d.get("parts") or []:
+        items.append({"kind": pt["kind"], "index": pt.get("index"), "title": pt.get("title"), "start": pt["start"], "end": pt["end"],
+                      "speakers": pt.get("speakers"), "people_on_stage": (pt.get("performers") or {}).get("estimate"),
+                      "camera": pt.get("camera"), "plan": pt.get("plan"), "pieces": pt.get("pieces")})
+    for pc in d.get("pieces") or []:
+        items.append({"kind": "piece", "index": pc["index"], "title": pc["title"], "start": pc["start"], "end": pc["end"],
+                      "part_index": pc.get("part_index"),
+                      "plan": pc.get("plan"), "performers": pc.get("performers"), "ensemble": pc.get("ensemble"),
+                      "instruments": [dict(i, **vocab.audioset_term(i["label"])) for i in pc.get("instruments") or []],
+                      "genres": [dict(g, **vocab.audioset_term(g["label"])) for g in pc.get("genres") or []],
+                      "music": pc.get("music"), "camera": pc.get("camera"), "intro": pc.get("intro"),
+                      "rights": pc.get("rights")})
+    segments = [{"id": s["id"], "kind": s["kind"], "kind_id": vocab.segment_class_id(s["kind"], prefix),
                  "audioset": vocab.audioset_term(vocab.SEGMENT_CLASS_LABELS[s["kind"]][0]) if s["kind"] in vocab.SEGMENT_CLASS_LABELS else None,
                  "start": s["start"], "end": s["end"], "confidence": s.get("confidence"), "title": s.get("title"),
                  "transcript": s.get("transcript"), "thumbnail": s.get("thumbnail")} for s in d["segments"]]
@@ -118,9 +120,9 @@ def build_record(analysis_dir: Path, video_path: Path | None = None, base_url: s
     }
     provenance["models"] = [m for m in provenance["models"] if m]
     return {
-        "schema": f"urn:uio:imv:av-record:{RECORD_SCHEMA_VERSION}", "identifier": ident, "base_url": base_url,
+        "schema": f"urn:avsegmenter:record:{RECORD_SCHEMA_VERSION}", "identifier": ident, "urn_prefix": prefix, "base_url": base_url,
         "descriptive": {"title": curated.get("title") or d.get("title"), "description": desc, "date": date,
-                        "venue": curated.get("venue"), "organisation": curated.get("organisation") or "Department of Musicology, University of Oslo",
+                        "venue": curated.get("venue"), "organisation": curated.get("organisation"), "organisation_url": curated.get("organisation_url"),
                         "event_type": profile, "genre": vocab.PROFILE_GENRE.get(profile), "language": curated.get("language") or ((d.get("speakers") or {}).get("language")),
                         "people": _people(d, curated), "keywords": curated.get("keywords", [])},
         "technical": {**tech, "sha256": sha256(video_path) if with_checksum else None, "duration_s": d["video"]["duration"], "path": str(video_path)},

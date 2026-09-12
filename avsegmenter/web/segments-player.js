@@ -1,6 +1,6 @@
-/* dam-segments.js — a segment timeline for any HTML5 <video>.
+/* segments-player.js — a segment timeline for any HTML5 <video>.
  *
- *   ConcertSegments.mount({ video, data | url, container, assetBase: '', preroll: 2 })
+ *   SegmentsPlayer.mount({ video, data | url, container, assetBase: '', preroll: 2 })
  *
  * Draws, top to bottom: legend with per-class toggles, the segmentation strip, a videogram strip
  * (MGT, image from data.videogram), a waveform strip (1 Hz level from data.tracks.level_db), a
@@ -164,9 +164,10 @@
         style: `left:${pct(s.start / dur)};width:${pct((s.end - s.start) / dur)}`, onclick: (e) => { e.stopPropagation(); seek(s); } });
       b.dataset.id = s.id; return b;
     });
-    const numbered = (data.parts && data.parts.length) ? data.parts.filter(p => p.kind === 'part') : data.pieces;
+    const realParts = (data.parts || []).filter(p => p.kind === 'part');
+    const numbered = data.pieces.length ? data.pieces : realParts;
     const pieceMarks = numbered.map(p => el('span', { class: 'cs-num', style: `left:${pct((p.start + p.end) / 2 / dur)}`, title: p.title || '' }, p.index));
-    const partMarks = (data.parts || []).filter(p => p.kind === 'part').map(p => el('i', { class: 'cs-part', style: `left:${pct(p.start / dur)};width:${pct((p.end - p.start) / dur)}` }));
+    const partMarks = (realParts.length > 1 || !data.pieces.length) ? realParts.map(p => el('i', { class: 'cs-part', style: `left:${pct(p.start / dur)};width:${pct((p.end - p.start) / dur)}`, title: `${p.index}. ${p.title || ''}` }, el('b', null, `${p.index}. ${p.title || ''}`))) : [];
     const turns = (data.speakers && data.speakers.turns) || [];
     const turnBlocks = turns.map(t => el('div', { class: 'cs-turn', title: `${fmt(t.start)}–${fmt(t.end)} ${speakerName(data, t.speaker)}`, style: `left:${pct(t.start / dur)};width:${pct(Math.max(0.0005, (t.end - t.start) / dur))};background:${speakerColor(t.speaker)}`, onclick: (e) => { e.stopPropagation(); video.currentTime = t.start; if (video.paused && video.play) video.play().catch(() => {}); } }));
     const speakerRow = turns.length ? el('div', { class: 'cs-speakers' }, ...turnBlocks) : null;
@@ -219,7 +220,7 @@
     }
     video.addEventListener('timeupdate', tick); video.addEventListener('seeked', tick); video.addEventListener('loadedmetadata', tick); tick();
 
-    const pieceSegs = (data.parts && data.parts.length) ? data.parts.filter(p => p.kind === 'part').map(p => ({ start: p.start, end: p.end, kind: 'part' })) : data.segments.filter(s => s.kind === 'music');
+    const pieceSegs = data.pieces.length ? data.segments.filter(s => s.kind === 'music') : realParts.map(p => ({ start: p.start, end: p.end, kind: 'part' }));
     document.addEventListener('keydown', (e) => {
       if (e.target && /input|textarea|select|button/i.test(e.target.tagName)) return;
       const t = video.currentTime;
@@ -245,7 +246,7 @@
 .cs-block:hover{background:rgba(127,127,127,.15)}
 .cs-block.cs-on{border-bottom-color:var(--cs-mark)}
 .cs-num{position:absolute;top:2px;transform:translateX(-50%);font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 1px #000;pointer-events:none}
-.cs-parts{position:relative;height:6px;background:var(--cs-card)} .cs-part{position:absolute;top:1px;bottom:1px;background:var(--cs-mark);opacity:.35;border-radius:2px}
+.cs-parts{position:relative;height:16px;background:var(--cs-card)} .cs-part{position:absolute;top:2px;bottom:2px;background:var(--cs-mark);opacity:.25;border-radius:2px;overflow:hidden;white-space:nowrap} .cs-part b{font-size:10px;line-height:12px;padding:0 4px;color:var(--cs-card);opacity:1;font-weight:600}
 .cs-speakers{position:relative;height:14px;border-top:1px solid var(--cs-border);background:var(--cs-card)} .cs-turn{position:absolute;top:2px;bottom:2px;cursor:pointer;opacity:.9} .cs-turn:hover{opacity:1;filter:brightness(1.2)}
 .cs-legend-spk{margin-top:-2px} .cs-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px}
 .cs-cuts{position:relative;height:5px;background:var(--cs-card)}.cs-cut{position:absolute;top:0;bottom:0;width:1px;background:var(--cs-mark);opacity:.8}
@@ -280,5 +281,5 @@
 `;
   function injectCss() { if (document.getElementById('cs-css')) return; document.head.append(el('style', { id: 'cs-css' }, CSS)); }
 
-  global.ConcertSegments = { mount: (o) => { injectCss(); return mount(o); }, COLORS, LABELS, fmt };
+  global.SegmentsPlayer = global.ConcertSegments = { mount: (o) => { injectCss(); return mount(o); }, COLORS, LABELS, fmt };
 })(window);

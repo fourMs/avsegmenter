@@ -22,11 +22,19 @@ def iiif_manifest(rec: dict) -> dict:
     tech = rec["technical"]
     canvas_id = f"{base}/canvas/1"
     video_url = f"{base}/{tech.get('file')}"
-    ranges = []
-    items = [it for it in rec["structural"]["items"] if it.get("kind") != "break"]
-    for it in items:
-        ranges.append({"id": f"{base}/range/{it['kind']}-{it.get('index')}", "type": "Range", "label": _lang(rec, it.get("title") or f"{it['kind']} {it.get('index')}"),
-                       "items": [{"id": f"{canvas_id}#t={it['start']},{it['end']}", "type": "Canvas"}]})
+    def rng(it, children=None):
+        r = {"id": f"{base}/range/{it['kind']}-{it.get('index')}", "type": "Range", "label": _lang(rec, it.get("title") or f"{it['kind']} {it.get('index')}"),
+             "items": [{"id": f"{canvas_id}#t={it['start']},{it['end']}", "type": "Canvas"}]}
+        if children:
+            r["items"] = children + r["items"]
+        return r
+    all_items = rec["structural"]["items"]
+    parts = [it for it in all_items if it.get("kind") == "part"]
+    pieces = [it for it in all_items if it.get("kind") == "piece"]
+    if len(parts) > 1:
+        ranges = [rng(pt, [rng(pc) for pc in pieces if pc.get("part_index") == pt.get("index")]) for pt in parts]
+    else:
+        ranges = [rng(pc) for pc in pieces] or [rng(pt) for pt in parts]
     def page(name, annos):
         return {"id": f"{base}/annotations/{name}", "type": "AnnotationPage", "items": annos}
     seg_annos = [{"id": f"{base}/annotation/{s['id']}", "type": "Annotation", "motivation": "tagging",
@@ -55,7 +63,7 @@ def iiif_manifest(rec: dict) -> dict:
             ("Privacy level", (rights.get("privacy") or {}).get("level")), ("Access", rights.get("access"))) if v],
         "requiredStatement": {"label": _lang(rec, "Rights"), "value": _lang(rec, (rights.get("license") or "not stated") + (f" – {rights['rights_holder']}" if rights.get("rights_holder") else ""))},
         **({"rights": rights["license_url"]} if rights.get("license_url") else {}),
-        "provider": [{"id": "https://www.hf.uio.no/imv/", "type": "Agent", "label": _lang(rec, rec["descriptive"].get("organisation") or "IMV")}],
+        **({"provider": [{"id": rec["descriptive"].get("organisation_url") or f"{base}/organisation", "type": "Agent", "label": _lang(rec, rec["descriptive"]["organisation"])}]} if rec["descriptive"].get("organisation") else {}),
         "items": [{"id": canvas_id, "type": "Canvas", "duration": dur, **({"width": tech["width"], "height": tech["height"]} if tech.get("width") else {}),
                    "label": _lang(rec, "Recording"),
                    "items": [{"id": f"{canvas_id}/page/1", "type": "AnnotationPage", "items": [

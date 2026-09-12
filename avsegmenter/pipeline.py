@@ -68,14 +68,21 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
 
     log("6/9 video: performers (YOLO) + MGT motion tracks")
     dets = None if "video" in skip else performers.detect_persons(video, out_dir, cfg, log)
-    adir = None if ("video" in skip or (talk and not list((out_dir / "mgt").glob("*/tracks.json")))) else motion.motion_tracks(video, out_dir, log=log)
+    tech0 = metadata.probe(video)
+    pixel_frames = (tech0.get("width") or 1280) * (tech0.get("height") or 720) * (tech0.get("fps") or 25) * duration
+    have_tracks = bool(list((out_dir / "mgt").glob("*/tracks.json")))
+    if "video" in skip:
+        adir = None
+    elif have_tracks or pixel_frames <= cfg.motion_budget:
+        adir = motion.motion_tracks(video, out_dir, log=log)
+    else:
+        log(f"  MGT motion tracks skipped: {pixel_frames / 1e9:.0f} G pixel-frames exceeds the budget ({cfg.motion_budget / 1e9:.0f} G); run with --motion-tracks to force")
+        adir = None
     qs = motion.qom_per_second(adir) if adir else None
     cam = None
     if "video" not in skip:
         motion.videogram_png(video, out_dir, out_dir / "videogram.png", log=log)
         cam = camera.analyse_camera(out_dir / "proxy_videogram.mp4", out_dir, log=log)
-    if talk and dets is not None and isinstance(dets, dict):
-        pass
     if qs is not None:
         qs = motion.mask_camera(qs, cam)
 
@@ -89,8 +96,10 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         tr = speech.transcribe_segments(wav, tagging.PANNS_SR, segs, out_dir, cfg, whisper_python, log)
 
     dia = None
-    if talk:
-        log("7b/9 speakers (VAD + ECAPA + clustering)")
+    speech_total = sum(s.duration for s in segs if s.kind == "speech")
+    want_dia = cfg.diarize == "always" or (cfg.diarize == "auto" and speech_total >= cfg.diarize_min_speech_s)
+    if want_dia and "speakers" not in skip:
+        log(f"7b/9 speakers (VAD + ECAPA + clustering) over {speech_total / 60:.0f} min of talk")
         y16, _ = audio.load_mono(wav, speakers.SR)
         dia = speakers.diarize(y16, out_dir, device="cuda" if cfg.device in ("auto", "cuda") else "cpu",
                                threshold=cfg.speaker_threshold, n_speakers=cfg.n_speakers, log=log)
@@ -101,6 +110,8 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
             st["name"] = names.get(sid); st["role"] = dia["roles"].get(sid)
         if full.exists():
             speech.attach_transcript_to_turns(json.loads(full.read_text()), dia["turns"])
+        elif tr:
+            speech.attach_transcript_to_turns({"segments": [pp for v in tr.values() for pp in v.get("parts", [])]}, dia["turns"])
 
     log("8/9 describe pieces")
     music_idx = [i for i, s in enumerate(segs) if s.kind == "music"]
@@ -131,7 +142,7 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
     for n, i in enumerate(music_idx, start=1):
         s = segs[i]; d = seg_dicts[i]
         tags = pieces.tag_summary(P, T, labels, s)
-        perf = performers.performer_counts(dets, s, cfg, cam) if dets else None
+        perf = performers.performer_counts(dets, s, cfg, cam, kind="piece") if dets else None
         # the nearest preceding speech segment (within 5 min) is the spoken introduction
         intro_ids = []
         for j in range(i - 1, -1, -1):
@@ -174,9 +185,16 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         d["piece_index"] = n
         piece_dicts.append(piece)
 
+    # ---- parts for every recording: breaks, applause followed by talk, arrival of a major voice
+    parts = partsmod.find_parts(segs, dia["turns"] if dia else [], duration, gap_s=cfg.part_gap_s, min_s=cfg.part_min_s)
+    for pt in parts:
+        if pt["kind"] == "part":
+            pt["speakers"] = speakers.speaker_of(dia["turns"], pt["start"], pt["end"]) if dia else {}
+    music_total = sum(s.duration for s in segs if s.kind == "music")
+    acts = programme.load_programme(programme_path) if programme_path else []
     plan = None
-    if programme_path:
-        acts = programme.load_programme(programme_path)
+    acts_to = "pieces" if (piece_dicts and music_total >= speech_total) else "parts"
+    if acts and acts_to == "pieces":
         al = programme.align([{"id": pc["id"], "intro": (pc["intro"] or {}).get("text")} for pc in piece_dicts], acts)
         for pc in piece_dicts:
             j = al["assignments"].get(pc["id"])
@@ -190,31 +208,30 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
                           "match_score": round(max(al["scores"][pc["id"]] or [0]), 2)}
             pc["title"] = act_t
             seg_dicts[[d["id"] for d in seg_dicts].index(pc["id"])]["title"] = pc["title"]
-        plan = {"source": str(programme_path), "acts": acts, "assignments": al["assignments"],
+        plan = {"source": str(programme_path), "acts": acts, "aligned_to": "pieces", "assignments": al["assignments"],
                 "not_detected": [acts[j] | {"index": j} for j in al["not_detected"]]}
-
-    parts = None
-    if talk:
-        parts = partsmod.find_parts(segs, dia["turns"] if dia else [], duration, gap_s=cfg.part_gap_s, min_s=cfg.part_min_s)
-        acts = programme.load_programme(programme_path) if programme_path else []
+    partsmod.title_parts(parts, acts if acts_to == "parts" else [], dia["roles"] if dia else None)
+    if acts and acts_to == "parts":
+        plan = {"source": str(programme_path), "acts": acts, "aligned_to": "parts",
+                "assignments": {f"part-{pt['index']}": acts.index(pt["plan"]) for pt in parts if pt.get("plan")},
+                "not_detected": [a | {"index": j} for j, a in enumerate(acts) if a not in [pt.get("plan") for pt in parts]]}
+    for pt in parts:
+        if pt["kind"] != "part":
+            continue
+        pt["id"] = f"part-{pt['index']}"
+        if dets:
+            pt["performers"] = performers.performer_counts(dets, fusion.Segment(pt["start"], pt["end"], "speech"), cfg, cam, kind="part")
+        if cam:
+            pt["camera"] = camera.piece_camera(cam, pt["start"], pt["end"])
+        pt["pieces"] = [pc["index"] for pc in piece_dicts if pt["start"] <= pc["start"] < pt["end"]]
+    for d in seg_dicts:
         for pt in parts:
-            if pt["kind"] == "part":
-                pt["speakers"] = speakers.speaker_of(dia["turns"], pt["start"], pt["end"]) if dia else {}
-        partsmod.title_parts(parts, acts, dia["roles"] if dia else None)
-        for pt in parts:
-            if pt["kind"] != "part":
-                continue
-            pt["speakers"] = speakers.speaker_of(dia["turns"], pt["start"], pt["end"]) if dia else {}
-            if dets:
-                pt["performers"] = performers.performer_counts(dets, fusion.Segment(pt["start"], pt["end"], "speech"), cfg, cam)
-            if cam:
-                pt["camera"] = camera.piece_camera(cam, pt["start"], pt["end"])
-        for d in seg_dicts:
-            for pt in parts:
-                if pt["kind"] == "part" and pt["start"] <= d["start"] < pt["end"]:
-                    d["part_index"] = pt["index"]
+            if pt["kind"] == "part" and pt["start"] <= d["start"] < pt["end"]:
+                d["part_index"] = pt["index"]
+    for pc in piece_dicts:
+        pc["part_index"] = next((pt["index"] for pt in parts if pt["kind"] == "part" and pt["start"] <= pc["start"] < pt["end"]), None)
 
-    tech = metadata.probe(video)
+    tech = tech0
     user_meta = metadata.load_user_metadata(metadata_path)
     data = {
         "title": title or video.stem,
@@ -229,6 +246,8 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         "pieces": piece_dicts,
         "parts": parts,
         "speakers": ({"speakers": dia["speakers"], "roles": dia["roles"], "turns": dia["turns"]} if dia else None),
+        "hierarchy": {"parts": sum(1 for pt in parts if pt["kind"] == "part"), "pieces": len(piece_dicts),
+                      "turns": len(dia["turns"]) if dia else 0, "segments": len(seg_dicts), "programme_aligned_to": acts_to if acts else None},
         "tracks": {"hop_s": 1.0,
                    "level_db": [round(float(v), 1) for v in audio.rms_db(np.asarray(y32), tagging.PANNS_SR, 1.0)],
                    "qom": [None if not np.isfinite(v) else round(float(v), 4) for v in (qs / (np.nanpercentile(qs, 99) or 1.0))] if qs is not None else None},

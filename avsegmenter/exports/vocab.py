@@ -14,9 +14,16 @@ MPEG7_CAMERA = "urn:mpeg:mpeg7:cs:CameraMotionCS:2001"
 SEGMENT_CLASS_LABELS = {
     "music": ["Music"], "speech": ["Speech"], "applause": ["Applause"], "silence": ["Silence"], "other": ["Sound effect"],
 }
-#: Local, stable identifiers for the classes themselves
-SEGMENT_CLASS_IDS = {k: f"urn:uio:imv:segment-class:{k}" for k in SEGMENT_CLASS_LABELS}
-PART_KIND_IDS = {"part": "urn:uio:imv:part-kind:part", "break": "urn:uio:imv:part-kind:break"}
+#: Stable identifiers for the classes themselves live under the record's URN prefix
+DEFAULT_URN_PREFIX = "urn:avsegmenter"
+
+
+def segment_class_id(kind: str, prefix: str = DEFAULT_URN_PREFIX) -> str:
+    return f"{prefix}:segment-class:{kind}"
+
+
+def part_kind_id(kind: str, prefix: str = DEFAULT_URN_PREFIX) -> str:
+    return f"{prefix}:part-kind:{kind}"
 
 #: MPEG-7 CameraMotionCS terms for the camera states we produce
 CAMERA_STATE_TERMS = {"still": "fixed", "moving": "pan-tilt-zoom", "cut": "cut"}

@@ -1,17 +1,53 @@
 {
-  "license": "CC licence (the DAM record says \"CC-lisenser\"; variant to be confirmed by IMV)",
-  "license_url": "https://creativecommons.org/licenses/",
-  "rights_holder": "Department of Musicology (IMV), University of Oslo",
-  "privacy": {"level": "yellow", "note": "audience visible and performers named; no minors identified; publication on the DAM catalog is by consent of the performers"},
-  "copyrights": [
-    {"nr": "3", "status": "public domain", "note": "Agathe Backer Grøndahl (1847–1907); the performance itself is protected (performer's rights)"},
-    {"nr": "4", "status": "performers' own work", "note": "improvisation"},
-    {"nr": "6", "status": "unknown", "note": "choir repertoire not listed in the plan; second song with audience sing-along"},
-    {"nr": "7", "status": "performers' own work"},
-    {"nr": "8", "status": "performers' own work", "note": "Crome Hill, \"Climbing\""},
-    {"nr": "9", "status": "protected", "note": "Duke Ellington (d. 1974) and Richard Rodgers (d. 1979): concert licence covers the performance, online publication of the recording needs clearance"},
-    {"nr": "10", "status": "performers' own work"},
-    {"nr": "11", "status": "performers' own work", "note": "Gravel Peak originals; band members hold the rights"}
-  ],
-  "notes": "Rights statuses entered by hand from the running order; fingerprints found no released recording, as expected for a live concert."
+ "license": "CC licence (the DAM record says \"CC-lisenser\"; variant to be confirmed by IMV)",
+ "license_url": "https://creativecommons.org/licenses/",
+ "rights_holder": "Department of Musicology (IMV), University of Oslo",
+ "privacy": {
+  "level": "yellow",
+  "note": "audience visible and performers named; no minors identified; publication on the DAM catalog is by consent of the performers"
+ },
+ "copyrights": [
+  {
+   "nr": "3",
+   "status": "public domain",
+   "note": "Agathe Backer Grøndahl (1847–1907); the performance itself is protected (performer's rights)"
+  },
+  {
+   "nr": "4",
+   "status": "performers' own work",
+   "note": "improvisation"
+  },
+  {
+   "nr": "6",
+   "status": "unknown",
+   "note": "choir repertoire not listed in the plan; second song with audience sing-along"
+  },
+  {
+   "nr": "7",
+   "status": "performers' own work"
+  },
+  {
+   "nr": "8",
+   "status": "performers' own work",
+   "note": "Crome Hill, \"Climbing\""
+  },
+  {
+   "nr": "9",
+   "status": "protected",
+   "note": "Duke Ellington (d. 1974) and Richard Rodgers (d. 1979): concert licence covers the performance, online publication of the recording needs clearance"
+  },
+  {
+   "nr": "10",
+   "status": "performers' own work"
+  },
+  {
+   "nr": "11",
+   "status": "performers' own work",
+   "note": "Gravel Peak originals; band members hold the rights"
+  }
+ ],
+ "notes": "Rights statuses entered by hand from the running order; fingerprints found no released recording, as expected for a live concert.",
+ "urn_prefix": "urn:uio:imv",
+ "organisation": "Department of Musicology, University of Oslo",
+ "organisation_url": "https://www.hf.uio.no/imv/"
 }

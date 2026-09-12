@@ -60,7 +60,7 @@ _PATTERNS = [
     re.compile(r"(?i:band|duo|trio|kor|koret)\s+(?:som heter\s+)?" + _NAME),
 ]
 _STOP = {"Og", "Så", "Da", "Nå", "Det", "Den", "Vi", "Jeg", "Men", "Her", "Neste", "Dette", "Takk", "Tusen",
-         "IMV", "Semesterstart-konsert", "Semesterstartkonsert", "Ja", "Nei", "Ok", "Hvis", "Når", "For", "Til"}
+         "Ja", "Nei", "Ok", "Hvis", "Når", "For", "Til", "Velkommen", "Konsert", "Konserten"}
 
 
 def performer_guess(intro_text: str | None) -> list[str]:

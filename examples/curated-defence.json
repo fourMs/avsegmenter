@@ -11,5 +11,8 @@
   "S1": "Anna Xambó Sedó (first opponent)",
   "S2": "Paul Vickers (second opponent)"
  },
- "notes": "Speaker names assigned by hand to the clusters of this run (ids change if the clustering is re-run)."
+ "notes": "Speaker names assigned by hand to the clusters of this run (ids change if the clustering is re-run).",
+ "urn_prefix": "urn:uio:imv",
+ "organisation": "Department of Musicology, University of Oslo",
+ "organisation_url": "https://www.hf.uio.no/imv/"
 }

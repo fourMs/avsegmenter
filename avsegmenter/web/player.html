@@ -48,7 +48,7 @@
   document.title = data.title + ' – segments';
   document.getElementById('title').textContent = data.title;
   document.getElementById('foot').textContent = 'Analysis: PANNs/AudioSet tags via ambiscape, song finder + music descriptors via musiscape, motion + audio extraction via musicalgestures (MGT). Instrument, genre, performer-count and rights fields are automatic estimates.';
-  ConcertSegments.mount({ video: document.getElementById('video'), data, container: document.getElementById('segments'), assetBase: '' });
+  SegmentsPlayer.mount({ video: document.getElementById('video'), data, container: document.getElementById('segments'), assetBase: '' });
 </script>
 </body>
 </html>

@@ -36,17 +36,30 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
     for s in segs:                                                        # breaks: silence only (demos are 'other'/'music')
         if s.kind == "silence" and s.duration >= gap_s:
             cuts.append((s.start, "break")); cuts.append((s.end, "break-end"))
-    for s in segs:                                                        # applause ends a part
-        if s.kind == "applause" and s.duration >= applause_min_s:
-            cuts.append((s.end, "applause"))
+    def talk_share(a: float, b: float) -> float:
+        sp = sum(min(b, x.end) - max(a, x.start) for x in segs if x.kind == "speech" and x.end > a and x.start < b)
+        return sp / max(1e-9, b - a)
+
+    def content_share(a: float, b: float) -> float:
+        """Music, talk or applause, as opposed to silence and room noise."""
+        sp = sum(min(b, x.end) - max(a, x.start) for x in segs if x.kind in ("music", "speech", "applause") and x.end > a and x.start < b)
+        return sp / max(1e-9, b - a)
+
+    for s in segs:                                                        # applause ends a part when talk follows it
+        if s.kind == "applause" and s.duration >= applause_min_s and talk_share(s.end, min(duration, s.end + 300)) >= 0.7:
+            cuts.append((s.end, "applause"))                              # (in a concert applause is followed by the next piece)
     if turns:                                                             # a major voice arrives
         total: dict[str, float] = {}
         for t in turns:
             total[t["speaker"]] = total.get(t["speaker"], 0.0) + t["end"] - t["start"]
+        def share_after(spk: str, t0: float, win: float = 300.0) -> float:
+            tot_s = sum(min(t0 + win, t["end"]) - max(t0, t["start"]) for t in turns if t["speaker"] == spk and t["end"] > t0 and t["start"] < t0 + win)
+            return tot_s / win
         for spk, tot in total.items():
             if tot < speaker_min_total_s:
                 continue
-            first = next((t["start"] for t in turns if t["speaker"] == spk and t["end"] - t["start"] >= 20), None)
+            # arrival: the first turn from which this voice holds at least half of the next five minutes
+            first = next((t["start"] for t in turns if t["speaker"] == spk and t["end"] - t["start"] >= 10 and share_after(spk, t["start"]) >= 0.5), None)
             if first is not None and first > 60:
                 cuts.append((float(first), f"speaker:{spk}"))
     cuts.sort()
@@ -60,12 +73,10 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
     whys = [["start"]] + [w for _, w in merged]
     parts = [{"start": a, "end": b, "cues": whys[i]} for i, (a, b) in enumerate(zip(edges, edges[1:])) if b - a > 0]
 
-    def speech_share(a: float, b: float) -> float:
-        sp = sum(min(b, s.end) - max(a, s.start) for s in segs if s.kind == "speech" and s.end > a and s.start < b)
-        return sp / max(1e-9, b - a)
+    speech_share = content_share
 
-    # merging: a short span of talk joins the neighbouring talk (previous unless that is a break); a short quiet
-    # span joins the previous span; a long quiet span stays as a break
+    # merging: a short span of content joins the neighbouring content (previous unless that is a break); a short
+    # quiet span joins the previous span; a long quiet span stays as a break
     changed = True
     while changed and len(parts) > 1:
         changed = False
@@ -87,8 +98,9 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
             del parts[k]; changed = True
             break
     for pt in parts:
-        pt["speech_share"] = round(speech_share(pt["start"], pt["end"]), 3)
-        pt["kind"] = "part" if pt["speech_share"] >= 0.35 else "break"
+        pt["content_share"] = round(content_share(pt["start"], pt["end"]), 3)
+        pt["speech_share"] = round(talk_share(pt["start"], pt["end"]), 3)
+        pt["kind"] = "part" if pt["content_share"] >= 0.35 else "break"
         pt["cues"] = sorted(set(pt["cues"]), key=pt["cues"].index)
     n = 0
     for pt in parts:
@@ -103,7 +115,7 @@ def title_parts(parts: list[dict], acts: list[dict], roles: dict | None = None) 
     (an opening, a hand-over) does not consume an act; with more parts than acts, the acts go to the longest
     parts (in chronological order) and the rest keep generic titles; with fewer, trailing acts are unused."""
     real = [p for p in parts if p["kind"] == "part"]
-    chair = {s for s, r in (roles or {}).items() if r and r.startswith("chair")}
+    chair = {s for s, r in (roles or {}).items() if r and ("chair" in r or "host" in r)}
     for pt in parts:
         pt["title"] = "Break" if pt["kind"] == "break" else f"Part {pt['index']}"
         pt["plan"] = None

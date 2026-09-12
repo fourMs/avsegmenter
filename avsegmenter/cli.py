@@ -12,7 +12,9 @@ def main(argv=None) -> int:
     ap.add_argument("--video-url", default=None, help="URL the web player should load the video from")
     ap.add_argument("--title", default=None)
     ap.add_argument("--profile", default="concert", choices=["concert", "talk"], help="concert: pieces; talk: speaker turns and parts (defence, seminar, panel)")
-    ap.add_argument("--speakers", type=int, default=None, help="talk: fix the number of speakers")
+    ap.add_argument("--speakers", type=int, default=None, help="fix the number of speakers (default: clustering decides)")
+    ap.add_argument("--diarize", default="auto", choices=["auto", "always", "never"], help="speaker turns: auto = when there is 5+ min of talk")
+    ap.add_argument("--motion-tracks", action="store_true", help="force MGT motion tracks even for long high-resolution files")
     ap.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     ap.add_argument("--whisper-python", default=None, help="interpreter that has faster-whisper installed")
     ap.add_argument("--whisper-model", default="large-v3")
@@ -26,7 +28,8 @@ def main(argv=None) -> int:
     ap.add_argument("--no-checksum", action="store_true", help="skip SHA-256 of the video (slow on very large files)")
     ap.add_argument("--skip", default="", help="comma list of stages to skip: video,speech,fingerprint")
     a = ap.parse_args(argv)
-    cfg = Config(profile=a.profile, n_speakers=a.speakers, device=a.device, whisper_model=a.whisper_model,
+    cfg = Config(profile=a.profile, n_speakers=a.speakers, diarize=a.diarize, device=a.device, whisper_model=a.whisper_model,
+                 motion_budget=float("inf") if a.motion_tracks else 3e11,
                  whisper_language=None if a.language == "auto" else a.language, acoustid_key=a.acoustid_key)
     video = Path(a.video)
     out = Path(a.out) if a.out else video.parent / "analysis"

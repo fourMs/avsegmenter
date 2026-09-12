@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Config:
-    profile: str = "concert"        # "concert" (pieces) | "talk" (speaker turns and parts: defences, seminars, panels)
+    profile: str = "concert"        # tuning defaults only: "concert" | "talk" (defences, seminars, panels). Every recording gets
+                                    # the same hierarchy: parts -> pieces + speaker turns -> segments.
     # PANNs tagging
     win_s: float = 4.0
     hop_s: float = 2.0
@@ -19,24 +20,26 @@ class Config:
     # video
     person_fps: float = 1.0
     person_conf: float = 0.40
-    stage_filter: bool = True        # drop audience by position (raised stage, camera in the hall); off for slide captures / insets
+    stage_filter: str | bool = "auto"  # "auto" reads the detections: raised stage -> on; heads low in the frame -> off
     # speech
     whisper_model: str = "large-v3"
     whisper_language: str | None = "no"
     # fingerprint
     acoustid_key: str | None = None
-    # talk profile
-    speaker_threshold: float = 0.75   # cosine merge distance for speaker clustering (centred ECAPA embeddings)
+    # speakers and parts (all recordings)
+    diarize: str = "auto"             # "auto": when there is at least diarize_min_speech_s of talk; "always" | "never"
+    diarize_min_speech_s: float = 300.0
+    speaker_threshold: float = 0.75   # cosine merge distance for speaker clustering (raw ECAPA embeddings)
     n_speakers: int | None = None     # fix the number of speakers instead of thresholding
-    part_gap_s: float = 90.0          # a non-speech gap this long ends a part
+    part_gap_s: float = 90.0          # a silence this long is a break between parts
     part_min_s: float = 240.0         # parts shorter than this are merged into a neighbour
+    motion_budget: float = 3e11       # MGT motion tracks run when width*height*fps*duration is below this (about 90 min of 720p30)
 
     def for_profile(self) -> "Config":
         if self.profile == "talk":
-            # music is rare and short in a defence (a sonification demo); talk should not fragment
+            # a musical example in a lecture is still a piece, but talk must not fragment on short sounds
             self.min_duration_s = {"music": 30.0, "speech": 4.0, "applause": 4.0, "silence": 20.0, "other": 8.0}
             self.weights = {"music": 0.8, "speech": 1.0, "applause": 1.6, "silence": 1.0}
-            self.stage_filter = False     # lecture halls and slide captures with speaker insets: no raised stage to key on
         return self
 
 

@@ -1,6 +1,7 @@
-"""avsegmenter: split a concert video into pieces / applause / talk and describe each piece.
+"""avsegmenter: segment audio-visual recordings of events (concerts, lectures, defences, panels) into
+parts, pieces, speaker turns and segments; describe them; export players and standard metadata.
 
-Built on three UiO toolboxes:
+Built on three toolboxes from the fourMs lab:
 - musicalgestures (MGT-python): audio extraction, motion tracks (QoM, videograms), keyframes
 - ambiscape: PANNs AudioSet tagging, 1 Hz level/spectral features, novelty segmentation
 - musiscape: concert song finder, region classifier, per-piece music descriptors, timeline figure
