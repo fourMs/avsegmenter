@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from lxml import etree
 
-from av_segmenter.exports import build_record, write_all
-from av_segmenter.exports.validate import validate_all, validate_bag
+from avsegmenter.exports import build_record, write_all
+from avsegmenter.exports.validate import validate_all, validate_bag
 
 
 @pytest.fixture

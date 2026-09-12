@@ -47,7 +47,7 @@ def make_bag(bag_dir: Path, files: dict[str, Path], info: dict, video: Path | No
     (bag_dir / "bagit.txt").write_text("BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n")
     (bag_dir / "manifest-sha256.txt").write_text("".join(f"{h}  {p}\n" for p, h in sorted(entries.items())))
     total = sum((bag_dir / p).stat().st_size for p in entries)
-    lines = {"Bagging-Date": _dt.date.today().isoformat(), "Payload-Oxum": f"{total}.{len(entries)}", "Bag-Software-Agent": "av-segmenter exports.bag", **{k: v for k, v in info.items() if v and k != "video_sha256"}}
+    lines = {"Bagging-Date": _dt.date.today().isoformat(), "Payload-Oxum": f"{total}.{len(entries)}", "Bag-Software-Agent": "avsegmenter exports.bag", **{k: v for k, v in info.items() if v and k != "video_sha256"}}
     (bag_dir / "bag-info.txt").write_text("".join(f"{k}: {v}\n" for k, v in lines.items()))
     tagm = {n: _sha256(bag_dir / n) for n in ("bagit.txt", "bag-info.txt", "manifest-sha256.txt")}
     (bag_dir / "tagmanifest-sha256.txt").write_text("".join(f"{h}  {n}\n" for n, h in tagm.items()))

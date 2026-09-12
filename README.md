@@ -1,4 +1,4 @@
-# av-segmenter
+# avsegmenter
 
 Splits a concert video into **pieces, applause, spoken introductions and silence**, describes each
 piece (instruments, genre tags, singing, tempo/key, performer count, motion), and exports a
@@ -24,15 +24,15 @@ Plus optional: **ultralytics YOLO** (people on stage), **faster-whisper** (trans
 
 ```bash
 pip install -e .                      # package is a thin layer over the three toolboxes
-av-segment concert.mp4 -o analysis \
+avsegmenter concert.mp4 -o analysis \
     --title "Semesterstartkonsert H26" \
     --video-url "https://dam.hf.uio.no/api/public/media?id=20162&library=imv" \
     --whisper-python ~/.venvs/annotate-audio/bin/python   # any interpreter with faster-whisper
 # stages can be skipped: --skip video,speech,fingerprint ; --device cpu works, just slower
 # with a running order (IMV "kjøreplan" .docx table, or a JSON list of acts):
-av-segment concert.mp4 -o analysis --programme Kjoreplan.docx
+avsegmenter concert.mp4 -o analysis --programme Kjoreplan.docx
 # with license / privacy level / known copyrights for the metadata box:
-av-segment concert.mp4 -o analysis --programme Kjoreplan.docx --metadata metadata.json
+avsegmenter concert.mp4 -o analysis --programme Kjoreplan.docx --metadata metadata.json
 ```
 
 `metadata.json` holds what the analysis cannot know: `license` (+ `license_url`, `rights_holder`),
@@ -57,7 +57,7 @@ A PhD defence, a seminar or a panel is one long speech segment to a sound-event 
 `talk` profile keeps the same segmentation but adds who spoke when and how the event was structured:
 
 ```bash
-av-segment defence.mp4 -o analysis --profile talk --programme programme.json --metadata metadata.json
+avsegmenter defence.mp4 -o analysis --profile talk --programme programme.json --metadata metadata.json
 ```
 
 - **Speakers** (`speakers.py`): silero VAD → 1.5 s windows → ECAPA-TDNN embeddings (speechbrain, GPU)

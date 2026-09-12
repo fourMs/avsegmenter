@@ -3,7 +3,7 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "av-segmenter"
+name = "avsegmenter"
 version = "0.1.0"
 description = "Segment concert videos into pieces, applause and talk; describe each piece; export a web timeline."
 requires-python = ">=3.10"
@@ -17,10 +17,10 @@ ml = ["panns-inference", "torch", "ultralytics"]
 speech = ["faster-whisper"]
 
 [project.scripts]
-av-segment = "av_segmenter.cli:main"
+avsegmenter = "avsegmenter.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["av_segmenter*"]
+include = ["avsegmenter*"]
 
 [tool.setuptools.package-data]
-av_segmenter = ["web/*"]
+avsegmenter = ["web/*"]

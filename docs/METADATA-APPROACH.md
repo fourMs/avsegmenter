@@ -4,7 +4,7 @@
 
 ## What we have
 
-`av-segment` analyses a recording once, on our own servers, and writes an **analysis folder** next to it:
+`avsegmenter` analyses a recording once, on our own servers, and writes an **analysis folder** next to it:
 
 - `segments.json` — everything the analysis found (automatic; overwritten on every run)
 - `curated.json` — what a person decided (title, people and roles, license, privacy level, per-work rights status, speaker names; never written by the analysis)
@@ -50,4 +50,4 @@ Classes use controlled vocabularies, not free text: AudioSet ontology ids for so
 - `ebucore.xml` validates against the official EBUCore XSD (from EBU's GitHub, with the Dublin Core import resolved locally); both test recordings pass. `premis.xml` is well-formed and follows PREMIS 3; the Library of Congress blocks automated schema download, so vendor `premis.xsd` into `~/.cache/av-xsd` once to validate it too.
 - The record schema is versioned (`av-record:1.0`); changes are additive.
 
-*Command:* `av-segment VIDEO -o OUT [--profile concert|talk] [--programme plan.docx|json] [--metadata curated.json] [--base-url URL] [--identifier URN] [--bag]`
+*Command:* `avsegmenter VIDEO -o OUT [--profile concert|talk] [--programme plan.docx|json] [--metadata curated.json] [--base-url URL] [--identifier URN] [--bag]`

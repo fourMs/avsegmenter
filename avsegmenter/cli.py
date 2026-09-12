@@ -6,7 +6,7 @@ from .pipeline import run
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="av-segment", description="Segment a concert video into pieces / applause / talk.")
+    ap = argparse.ArgumentParser(prog="avsegmenter", description="Segment a concert video into pieces / applause / talk.")
     ap.add_argument("video")
     ap.add_argument("-o", "--out", default=None, help="output directory (default: <video dir>/analysis)")
     ap.add_argument("--video-url", default=None, help="URL the web player should load the video from")

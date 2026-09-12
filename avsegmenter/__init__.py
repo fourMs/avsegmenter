@@ -1,4 +1,4 @@
-"""av-segmenter: split a concert video into pieces / applause / talk and describe each piece.
+"""avsegmenter: split a concert video into pieces / applause / talk and describe each piece.
 
 Built on three UiO toolboxes:
 - musicalgestures (MGT-python): audio extraction, motion tracks (QoM, videograms), keyframes

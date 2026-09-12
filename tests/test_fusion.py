@@ -1,6 +1,6 @@
 import numpy as np
-from av_segmenter.fusion import fuse, group_scores, Segment
-from av_segmenter.config import Config
+from avsegmenter.fusion import fuse, group_scores, Segment
+from avsegmenter.config import Config
 
 
 def test_fuse_maps_musiscape_vocabulary_and_covers_the_recording():

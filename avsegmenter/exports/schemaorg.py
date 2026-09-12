@@ -22,7 +22,7 @@ def schemaorg_jsonld(rec: dict) -> dict:
         "publisher": {"@type": "Organization", "name": d.get("organisation")},
         "recordedAt": {"@type": event_type, "name": d["title"], "startDate": d.get("date"), "location": {"@type": "Place", "name": d.get("venue")} if d.get("venue") else None, "performer": people or None},
         "hasPart": clips,
-        "provider": {"@type": "SoftwareApplication", "name": "av-segmenter", "softwareVersion": next((x.get("version") for x in rec["provenance"]["software"] if x["name"] == "av-segmenter"), None)},
+        "provider": {"@type": "SoftwareApplication", "name": "avsegmenter", "softwareVersion": next((x.get("version") for x in rec["provenance"]["software"] if x["name"] == "avsegmenter"), None)},
     }
     return _clean(obj)
 
