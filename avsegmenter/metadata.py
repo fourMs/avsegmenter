@@ -94,3 +94,46 @@ def rights_block(pieces: list[dict], user: dict, detections: dict | None) -> dic
         privacy = suggested
     return {"license": user.get("license"), "license_url": user.get("license_url"), "rights_holder": user.get("rights_holder"),
             "privacy": privacy, "copyrights": copyrights, "notes": user.get("notes")}
+
+
+def derivatives(out_dir: Path, data: dict) -> list[dict]:
+    """Every derived file in the analysis folder with format, generator and checksum: the self-description a
+    deposit needs (PREMIS derivation events, METS file section, IIIF seeAlso all read this list)."""
+    import hashlib
+    out_dir = Path(out_dir)
+    tools = data.get("tools") or {}
+    cat = [
+        ("segments.json", "application/json", "avsegmenter", "analysis record"),
+        ("curated.json", "application/json", "human", "curated overlay"),
+        ("research_additions.json", "application/json", "human/other tools", "research additions"),
+        ("chapters.vtt", "text/vtt", "avsegmenter", "chapters"), ("captions.vtt", "text/vtt", "faster-whisper via avsegmenter", "captions"),
+        ("videogram.png", "image/png", f"musicalgestures {tools.get('musicalgestures')}", "videogram"),
+        ("motiongram.png", "image/png", f"musicalgestures {tools.get('musicalgestures')}", "motiongram"),
+        ("colourgram.png", "image/png", "avsegmenter.features", "colourgram"), ("timeline.png", "image/png", f"musiscape {tools.get('musiscape')}", "timeline figure"),
+        ("panns_frames.npz", "application/octet-stream", f"ambiscape {tools.get('ambiscape')} (PANNs CNN14)", "AudioSet posteriors, 2 s frames"),
+        ("camera.json", "application/json", f"musicalgestures {tools.get('musicalgestures')}", "camera states"),
+        ("persons.json", "application/json", f"musicalgestures {tools.get('musicalgestures')} (YOLO)", "person boxes, 1 fps"),
+        ("speakers.json", "application/json", "avsegmenter.speakers (silero VAD, ECAPA)", "speaker turns"),
+        ("loudness.json", "application/json", "ffmpeg ebur128", "EBU R128 loudness"), ("qc.json", "application/json", "ffmpeg filters", "quality control"),
+        ("audio_features.json", "application/json", "librosa via avsegmenter", "audio descriptors, 1 Hz"),
+        ("picture_colour.json", "application/json", "avsegmenter.features", "picture colour, 1 Hz"),
+        ("motion_vectors.json", "application/json", f"musicalgestures {tools.get('musicalgestures')} (PyAV)", "codec motion vectors, 1 Hz"),
+        ("whisper_full.json", "application/json", "faster-whisper", "whole-file transcript"), ("transcripts.json", "application/json", "faster-whisper", "transcripts per segment"),
+        ("player.html", "text/html", "avsegmenter", "player"), ("report.html", "text/html", "avsegmenter.report", "summary report"),
+    ]
+    out = []
+    for name, mime, gen, role in cat:
+        p = out_dir / name
+        if not p.exists():
+            continue
+        h = hashlib.sha256(p.read_bytes()).hexdigest() if p.stat().st_size < 200_000_000 else None
+        out.append({"path": name, "mimetype": mime, "size_bytes": p.stat().st_size, "sha256": h, "generator": gen, "role": role})
+    thumbs = sorted((out_dir / "thumbs").glob("*.jpg")) if (out_dir / "thumbs").exists() else []
+    if thumbs:
+        out.append({"path": "thumbs/", "mimetype": "image/jpeg", "count": len(thumbs), "size_bytes": sum(t.stat().st_size for t in thumbs), "generator": "ffmpeg via avsegmenter", "role": "keyframes"})
+    mgt = list((out_dir / "mgt").glob("*/tracks.json"))
+    if mgt:
+        d = mgt[0].parent
+        out.append({"path": f"mgt/{d.name}/", "mimetype": "application/octet-stream", "generator": f"musicalgestures {tools.get('musicalgestures')}", "role": "motion tracks (qom.f4, motiongram/videogram bases, pyramids)",
+                    "size_bytes": sum(f.stat().st_size for f in d.iterdir() if f.is_file())})
+    return out

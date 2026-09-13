@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from .config import Config
-from . import audio, tagging, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod, research
+from . import audio, tagging, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod, research, quality, features
 
 
 def _versions() -> dict:
@@ -261,7 +261,66 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         "programme": plan,
         "summary": {k: round(sum(s.duration for s in segs if s.kind == k), 1) for k in fusion.KINDS},
     }
+    # ---- broadcast-style quality, standard features, captions, derivatives
+    log("8b/9 loudness, QC, standard features")
+    hw = ["-hwaccel", "cuda"] if pixel_frames > 2e11 else None
+    qual = {"loudness": None, "qc": None}
+    if "quality" not in skip:
+        try:
+            qual["loudness"] = quality.loudness(wav, out_dir)
+        except Exception as e:  # noqa: BLE001
+            log(f"  loudness skipped: {e}")
+        try:
+            qual["qc"] = quality.qc(video, wav, out_dir, ffmpeg_input_args=hw)
+        except Exception as e:  # noqa: BLE001
+            log(f"  qc skipped: {e}")
+    feats = {"audio": None, "colour": None, "motion_vectors": None}
+    if "features" not in skip:
+        try:
+            feats["audio"] = features.audio_descriptors(y22, musicops.MS_SR, out_dir)
+        except Exception as e:  # noqa: BLE001
+            log(f"  audio descriptors skipped: {e}")
+        if (out_dir / "proxy_videogram.mp4").exists():
+            try:
+                feats["colour"] = features.picture_colour(out_dir / "proxy_videogram.mp4", out_dir)
+            except Exception as e:  # noqa: BLE001
+                log(f"  picture colour skipped: {e}")
+        if "video" not in skip:
+            feats["motion_vectors"] = features.motion_vectors(video, out_dir, cfg.motion_budget, pixel_frames)
+            if feats["motion_vectors"] and feats["motion_vectors"].get("error"):
+                log(f"  motion vectors skipped: {feats['motion_vectors']['error'][:120]}"); feats["motion_vectors"] = None
+    cap_parts = [pp for v in tr.values() for pp in v.get("parts", [])] if tr else []
+    if full.exists():
+        cap_parts = [pp for pp in json.loads(full.read_text()).get("segments", []) if pp.get("p_no_speech", 0) < 0.8]
+    captions = features.captions_vtt(cap_parts, out_dir / "captions.vtt") if cap_parts else None
+    data["quality"] = qual
+    data["features"] = {"audio": {k: v for k, v in (feats["audio"] or {}).items() if k != "tracks"} if feats["audio"] else None,
+                        "colour": {k: v for k, v in (feats["colour"] or {}).items() if k not in ("brightness", "saturation", "hue_hist_per_minute")} if feats["colour"] else None,
+                        "motion_vectors": {k: v for k, v in (feats["motion_vectors"] or {}).items() if k not in ("magnitude", "global_motion")} if feats["motion_vectors"] else None}
+    data["captions"] = "captions.vtt" if captions else None
+    extra_tracks = []
+    if qual["loudness"] and qual["loudness"].get("momentary_lufs_1hz"):
+        extra_tracks.append({"id": "loudness_m", "label": "Momentary loudness", "kind": "curve", "unit": "LUFS", "hop_s": 1.0, "values": qual["loudness"]["momentary_lufs_1hz"], "source": "ffmpeg ebur128 (EBU R128)", "range": [-50, -10]})
+    if feats["audio"]:
+        labels = {"centroid_hz": ("Spectral centroid", "Hz", [0, 5000]), "bandwidth_hz": ("Spectral bandwidth", "Hz", [0, 5000]), "flatness": ("Spectral flatness", "", [0, 0.5]),
+                  "rolloff_hz": ("Spectral rolloff", "Hz", [0, 10000]), "zcr": ("Zero-crossing rate", "", [0, 0.3]), "onset_rate": ("Onset rate", "onsets/s", [0, 8])}
+        for k, vals in feats["audio"]["tracks"].items():
+            lab, unit, rng = labels.get(k, (k, "", None))
+            mp = features.MPEG7.get(k)
+            extra_tracks.append({"id": k, "label": lab + (f" (MPEG-7 {mp})" if mp else ""), "kind": "curve", "unit": unit, "hop_s": 1.0, "values": vals, "source": "librosa via avsegmenter.features", "range": rng, "mpeg7": mp})
+    if feats["colour"]:
+        c = feats["colour"]
+        extra_tracks.append({"id": "brightness", "label": "Picture brightness", "kind": "curve", "unit": "0..1", "hop_s": c["hop_s"], "values": c["brightness"], "source": c["source"], "range": [0, 1]})
+        extra_tracks.append({"id": "saturation", "label": "Picture saturation", "kind": "curve", "unit": "0..1", "hop_s": c["hop_s"], "values": c["saturation"], "source": c["source"], "range": [0, 1]})
+        if c.get("image"):
+            extra_tracks.append({"id": "colourgram", "label": "Colourgram (dominant hues per minute)", "kind": "image", "image": c["image"], "source": c["source"]})
+    if feats["motion_vectors"]:
+        mv = feats["motion_vectors"]
+        extra_tracks.append({"id": "mv_qom", "label": "Motion-vector QoM (codec, P-frames)", "kind": "curve", "unit": "px", "hop_s": 1.0, "values": mv["magnitude"], "source": mv["source"], "mpeg7": "MotionActivity"})
+        extra_tracks.append({"id": "mv_global", "label": "Global motion from vectors (camera)", "kind": "curve", "unit": "px", "hop_s": 1.0, "values": mv["global_motion"], "source": mv["source"]})
     data["research"] = research.research_block(data, out_dir)
+    data["research"]["tracks"] += extra_tracks
+    data["derivatives"] = metadata.derivatives(out_dir, data)
     log("9/9 export")
     export.write_json(data, out_dir / "segments.json")
     export.write_vtt(data, out_dir / "chapters.vtt")

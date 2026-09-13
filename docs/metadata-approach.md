@@ -18,7 +18,9 @@
 | `annotations.json` | W3C Web Annotation | the same time-anchored annotations as a plain collection (media fragments `#t=start,end`) |
 | `schemaorg.json` | schema.org `VideoObject` + `MusicEvent`/`EducationEvent` | JSON-LD for the catalog page head: search engines, UiO's discovery layer |
 | `premis.xml` | PREMIS 3 | provenance: which software versions and models produced which layer, with parameters and the file's SHA-256 |
-| `chapters.vtt` | WebVTT | chapters for any HTML5 player |
+| `chapters.vtt`, `captions.vtt` | WebVTT | chapters and the transcript as captions for any HTML5 player (accessibility) |
+| `annotations.jams` | JAMS 0.3 | the annotation tiers in the format the music-information-retrieval community exchanges |
+| `mets.xml` | METS | the envelope libraries expect: descriptive (EBUCore), technical (facts, EBU R128 loudness, QC), preservation (PREMIS) and a file section over the payload with a timed structural map of parts and pieces |
 | `record.json` | internal canonical record (schema `urn:avsegmenter:record:1.0`) | the single source all of the above are generated from |
 
 `--bag` additionally writes a BagIt 1.0 bag (RFC 8493): `data/` with the video (hard-linked, not copied), the exports and the web layer, SHA-256 manifests and `bag-info.txt`. That is the deposit unit for the National Library, DUO or any repository that takes bags.
@@ -26,8 +28,8 @@
 ## Five layers, one rule
 
 1. Descriptive: title, date, venue, organisation, people with roles, works, genre, language.
-2. Technical: container, codecs, resolution, frame rate, pixel format and bit depth, audio layout, bitrates, size, creation time, SHA-256 (ffprobe).
-3. Structural: music / talk / applause / silence segments with confidence; pieces or parts with start and end; speaker turns with transcript; camera cuts and moves.
+2. Technical: container, codecs, resolution, frame rate, pixel format and bit depth, audio layout, bitrates, size, creation time, SHA-256 (ffprobe); loudness per EBU R128 (integrated, range, true peak); quality control items in the spirit of EBU Tech 3363 (black and frozen picture, silence, clipping, DC offset) as a PREMIS event with outcomes.
+3. Structural: music / talk / applause / silence segments with confidence; parts and pieces with start and end; speaker turns with transcript; camera cuts and moves; research tracks (level, loudness, standard audio descriptors with their MPEG-7 names, quantity of motion from frame differences and from codec motion vectors, camera state, picture brightness and colour) and tiers, each listed with its generator in a derivatives manifest.
 4. Rights and access: licence, rights holder, privacy level (green / yellow / red with a reason), per-work copyright status, access (`open` / `restricted`), embargo.
 5. Provenance: tool and model versions, parameters, which fields a person set.
 

@@ -28,6 +28,8 @@ def write_player(data: dict, out: Path, video_src: str) -> Path:
     html = (WEB / "player.html").read_text()
     js = (WEB / "segments-player.js").read_text()
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
-    html = html.replace("/*__JS__*/", js).replace("/*__DATA__*/", payload).replace("__VIDEO_SRC__", video_src)
+    track = f'<track kind="captions" src="{data["captions"]}" srclang="{(data.get("speakers") or {}).get("language") or "no"}" label="Transcript">' if data.get("captions") else ""
+    track += '<track kind="chapters" src="chapters.vtt" srclang="en" label="Chapters">'
+    html = html.replace("/*__JS__*/", js).replace("/*__DATA__*/", payload).replace("__VIDEO_SRC__", video_src).replace("<!--__TRACKS__-->", track)
     out.write_text(html)
     return out

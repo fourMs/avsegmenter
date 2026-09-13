@@ -15,6 +15,10 @@
 | `programme` | the loaded acts, `aligned_to` (pieces / parts), `assignments`, `not_detected` |
 | `metadata` | the rights block as merged from `curated.json`: `license`, `license_url`, `rights_holder`, `privacy` (`level`, `reasons`, `note`, `suggested`), `copyrights[]`, `notes` |
 | `hierarchy`, `summary`, `videogram` | counts per level, seconds per class, the videogram file |
+| `quality` | `loudness` (EBU R128: `integrated_lufs`, `loudness_range_lu`, `true_peak_dbtp`, `momentary_lufs_1hz`) and `qc` (items with `id`, `outcome` pass / warning / info / not measured, counts and spans) |
+| `features` | summaries of the standard feature runs (`audio` with MPEG-7 names, `colour`, `motion_vectors`); the series themselves are research tracks |
+| `derivatives[]` | every derived file: `path`, `mimetype`, `size_bytes`, `sha256`, `generator`, `role` |
+| `captions` | `captions.vtt` when a transcript exists |
 | `research` | `tracks[]` (`id`, `label`, `kind` curve/state/image, `unit`, `hop_s`, `values`/`states`/`image`, `source`, `range`, `palette`) and `tiers[]` (`id`, `label`, `kind` interval/point, `source`, `items[]` with `start`, `end`, `label`, `attrs`, `confidence`); built-in entries are recomputed each run, entries from `research_additions.json` are kept |
 
 ## `curated.json` (human; never written by the analysis)

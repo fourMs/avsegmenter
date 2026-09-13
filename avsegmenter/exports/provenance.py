@@ -56,5 +56,13 @@ def premis_xml(rec: dict) -> bytes:
           "Segmentation into music/speech/applause/silence, pieces or parts, speaker turns, camera cuts. Parameters: " + json.dumps(prov.get("parameters") or {}),
           agent_ids=sw + [f"model:{m['name']}" for m in prov.get("models", [])])
     event("analysis-technical", "format identification", prov.get("generated"), "ffprobe container/stream facts and SHA-256 of the file", agent_ids=sw[:1])
+    qc = (rec.get("quality") or {}).get("qc") or {}
+    if qc.get("items"):
+        bad = [i for i in qc["items"] if i["outcome"] == "warning"]
+        event("quality-control", "quality control", prov.get("generated"),
+              "; ".join(f"{i['id']}: {i['outcome']}" + (f" ({i.get('count')})" if i.get("count") is not None else "") for i in qc["items"]) + f". Loudness: {json.dumps((rec.get('quality') or {}).get('loudness') and {k: v for k, v in rec['quality']['loudness'].items() if k != 'momentary_lufs_1hz'})}",
+              outcome="pass with warnings" if bad else "pass", agent_ids=sw[:1])
+    for k, der in enumerate(rec.get("derivatives") or []):
+        event(f"derivation-{k:02d}", "creation", prov.get("generated"), f"{der.get('role')}: {der['path']} ({der.get('mimetype')}) by {der.get('generator')}" + (f", SHA-256 {der['sha256']}" if der.get("sha256") else ""), agent_ids=sw[:1])
     event("record-built", "creation", prov.get("record_built"), "Canonical record built; curated fields merged over automatic values: " + (", ".join(prov.get("curated_fields") or []) or "none"), agent_ids=sw[:1])
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)

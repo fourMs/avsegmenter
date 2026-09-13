@@ -19,7 +19,7 @@ For one recording, one folder:
 | `player.html` | self-contained player: video, camera-cut marks, MGT videogram, waveform coloured by segment, part bands and numbered pieces, speaker row, detail panel, metadata box, light/dark |
 | `segments-player.js` | the same timeline as a drop-in for any HTML5 `<video>` (`SegmentsPlayer.mount({video, url, container})`) |
 | `chapters.vtt`, `thumbs/`, `videogram.png` | for other players |
-| `export/` | EBUCore 1.10 (validated), IIIF Presentation 3 + Web Annotations, schema.org JSON-LD, PREMIS 3, the canonical `record.json` |
+| `export/` | EBUCore 1.10 (validated), IIIF Presentation 3 + Web Annotations, schema.org JSON-LD, PREMIS 3, JAMS, METS, the canonical `record.json` |
 | `bag/` (`--bag`) | a BagIt 1.0 bag for deposit, media hard-linked |
 
 ## Install

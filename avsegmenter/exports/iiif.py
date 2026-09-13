@@ -50,6 +50,9 @@ def iiif_manifest(rec: dict) -> dict:
     cut_annos = [{"id": f"{base}/annotation/cut-{k:03d}", "type": "Annotation", "motivation": "tagging",
                   "body": {"type": "TextualBody", "value": "camera cut", "purpose": "tagging"}, "target": f"{canvas_id}#t={c}"} for k, c in enumerate(cam.get("cuts") or [])]
     annos = [page("segments", seg_annos)]
+    if rec.get("captions"):
+        annos.append(page("captions", [{"id": f"{base}/annotation/captions", "type": "Annotation", "motivation": "supplementing",
+                                        "body": {"id": f"{base}/{rec['captions']}", "type": "Text", "format": "text/vtt", "label": _lang(rec, "Transcript")}, "target": canvas_id}]))
     if turn_annos: annos.append(page("speaker-turns", turn_annos))
     if cut_annos: annos.append(page("camera-cuts", cut_annos))
     builtin = {"segments", "pieces", "parts", "turns", "cuts"}
@@ -83,6 +86,8 @@ def iiif_manifest(rec: dict) -> dict:
         "structures": ranges,
         "seeAlso": [{"id": f"{base}/ebucore.xml", "type": "Dataset", "format": "application/xml", "profile": "urn:ebu:metadata-schema:ebucore", "label": _lang(rec, "EBUCore record")},
                     {"id": f"{base}/segments.json", "type": "Dataset", "format": "application/json", "label": _lang(rec, "Analysis (segments.json)")}]
+                   + [{"id": f"{base}/annotations.jams", "type": "Dataset", "format": "application/json", "profile": "https://jams.readthedocs.io/", "label": _lang(rec, "JAMS annotations")},
+                      {"id": f"{base}/mets.xml", "type": "Dataset", "format": "application/xml", "profile": "http://www.loc.gov/METS/", "label": _lang(rec, "METS")}]
                    + [{"id": f"{base}/tracks/{t['id']}.csv", "type": "Dataset", "format": "text/csv", "label": _lang(rec, t.get("label") or t["id"])}
                       for t in (rec.get("research") or {}).get("tracks", []) if t.get("kind") == "curve"],
     }

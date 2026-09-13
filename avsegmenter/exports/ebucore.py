@@ -101,12 +101,19 @@ def ebucore_xml(rec: dict) -> bytes:
     if tech.get("audio_bit_depth"): _e(af, "sampleSize", tech["audio_bit_depth"])
     if tech.get("audio_bitrate_kbps"): _e(af, "bitRate", int(tech["audio_bitrate_kbps"] * 1000))
     if tech.get("channels"): _e(af, "technicalAttributeString", tech.get("channel_layout") or f"{tech['channels']} channels", typeLabel="channels")
+    lo = (rec.get("quality") or {}).get("loudness") or {}
+    for key, label in (("integrated_lufs", "EBU R128 integrated loudness LUFS"), ("loudness_range_lu", "EBU R128 loudness range LU"), ("true_peak_dbtp", "EBU R128 true peak dBTP")):
+        if lo.get(key) is not None:
+            _e(af, "technicalAttributeString", lo[key], typeLabel=label)
     if tech.get("size_bytes"): _e(f, "fileSize", tech["size_bytes"])
     _e(f, "fileName", tech.get("file"))
     if tech.get("duration_s"): _e(_e(f, "duration"), "normalPlayTime", _dur(tech["duration_s"]))
     if tech.get("sha256"):
         h = _e(f, "hash"); _e(h, "hashValue", tech["sha256"]); _e(h, "hashFunction", None, typeLabel="SHA-256")
 
+    qc = (rec.get("quality") or {}).get("qc") or {}
+    for it in qc.get("items", []):
+        _e(f, "technicalAttributeString", f"{it['outcome']}" + (f" ({it.get('count')})" if it.get("count") is not None else ""), typeLabel=f"QC {it['id']}")
     _e(_e(core, "identifier", typeLabel="local"), "identifier", rec["identifier"], ns=DC)
     if desc.get("language"):
         _e(_e(core, "language", typeLabel="main"), "language", desc["language"], ns=DC)

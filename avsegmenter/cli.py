@@ -62,7 +62,7 @@ def main(argv=None) -> int:
     ap.add_argument("--identifier", default=None, help="persistent identifier of the recording (URN/DOI/handle)")
     ap.add_argument("--bag", action="store_true", help="also write a BagIt bag for deposit")
     ap.add_argument("--no-checksum", action="store_true", help="skip SHA-256 of the video (slow on very large files)")
-    ap.add_argument("--skip", default="", help="comma list of stages to skip: video,speech,fingerprint")
+    ap.add_argument("--skip", default="", help="comma list of stages to skip: video,speech,fingerprint,speakers,quality,features,export")
     a = ap.parse_args(argv)
     cfg = Config(profile=a.profile, n_speakers=a.speakers, diarize=a.diarize, device=a.device, whisper_model=a.whisper_model,
                  motion_budget=float("inf") if a.motion_tracks else 3e11,

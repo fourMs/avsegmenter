@@ -132,5 +132,6 @@ def build_record(analysis_dir: Path, video_path: Path | None = None, base_url: s
                        "tracks": {"level_db_1hz": (d.get("tracks") or {}).get("level_db")}, "videogram": d.get("videogram")},
         "rights": rights, "provenance": provenance,
         "research": d.get("research") or {"tracks": [], "tiers": []},
-        "files": {"segments": "segments.json", "player": "player.html", "chapters": "chapters.vtt", "videogram": d.get("videogram"), "thumbnails": "thumbs/"},
+        "quality": d.get("quality") or {}, "features": d.get("features") or {}, "derivatives": d.get("derivatives") or [], "captions": d.get("captions"),
+        "files": {"segments": "segments.json", "player": "player.html", "chapters": "chapters.vtt", "captions": d.get("captions"), "videogram": d.get("videogram"), "thumbnails": "thumbs/"},
     }

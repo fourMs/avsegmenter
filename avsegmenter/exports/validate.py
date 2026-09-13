@@ -90,8 +90,9 @@ def validate_all(out_dir: Path) -> dict[str, list[str]]:
     out_dir = Path(out_dir); res = {}
     if (out_dir / "ebucore.xml").exists(): res["ebucore.xml"] = validate_xml(out_dir / "ebucore.xml", "EBUCore.xsd")
     if (out_dir / "premis.xml").exists(): res["premis.xml"] = validate_xml(out_dir / "premis.xml", "premis.xsd")
+    if (out_dir / "mets.xml").exists(): res["mets.xml"] = validate_xml(out_dir / "mets.xml", "mets.xsd")
     if (out_dir / "manifest.json").exists(): res["manifest.json"] = validate_iiif(out_dir / "manifest.json")
-    for name in ("schemaorg.json", "annotations.json", "record.json"):
+    for name in ("schemaorg.json", "annotations.json", "record.json", "annotations.jams"):
         if (out_dir / name).exists():
             try: json.loads((out_dir / name).read_text()); res[name] = []
             except Exception as e: res[name] = [str(e)]  # noqa: BLE001
