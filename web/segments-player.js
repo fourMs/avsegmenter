@@ -193,7 +193,7 @@
 
   function researchPanel(data, video, dur, playheadHost) {
     const R = data.research || { tracks: [], tiers: [] };
-    const box = el('div', { class: 'cs-research', hidden: 'hidden' });
+    const box = el('details', { class: 'cs-meta cs-research' }, el('summary', null, 'Advanced view: how the analysis works'));
     const lanes = el('div', { class: 'cs-lanes' });
     const redraws = [];
     for (const t of R.tracks) {
@@ -215,7 +215,10 @@
       el('button', { type: 'button', onclick: () => { const t = video.currentTime; const u = location.href.split('#')[0] + `#t=${t.toFixed(1)}`; navigator.clipboard && navigator.clipboard.writeText(u); prompt('Link to this moment', u); } }, 'Link to this moment'),
       el('button', { type: 'button', onclick: () => { const s = data.segments.find(x => video.currentTime >= x.start && video.currentTime < x.end) || { start: 0, end: dur }; const blob = new Blob([csvOf(data, s.start, s.end)], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${(data.title || 'recording').replace(/\W+/g, '_')}_${fmt(s.start).replace(/:/g, '-')}.csv`; a.click(); } }, 'Export this segment as CSV'),
       el('span', { class: 'cs-muted' }, ` ${R.tracks.length} tracks · ${R.tiers.length} tiers · additions via avsegmenter add-track / add-tier`));
-    box.append(el('p', { class: 'cs-muted cs-research-intro' }, 'How we work: every layer below is data from the analysis or added by a researcher; the main view is a selection of it. Click a lane to seek.'), stack, tools);
+    const inner = el('div', { class: 'cs-research-inner' },
+      el('p', { class: 'cs-muted cs-research-intro' }, 'Every layer below is data from the analysis or added by a researcher; the main view is a selection of it. Click a lane to seek.'), stack, tools);
+    box.append(inner);
+    box.addEventListener('toggle', () => { if (box.open) redraws.forEach(f => f()); });
     return { box, redraws, playhead: ph };
   }
 
@@ -264,13 +267,12 @@
       el('button', { type: 'button', id: 'cs-next', onclick: () => jump(1) }, 'next ›'));
     const panel = el('div', { class: 'cs-detail' });
     const research = researchPanel(data, video, dur, { assetBase });
-    const advBtn = el('button', { type: 'button', class: 'cs-adv', 'aria-expanded': 'false', onclick: () => { const open = research.box.hidden; research.box.hidden = !open; advBtn.setAttribute('aria-expanded', String(open)); advBtn.textContent = open ? 'Hide advanced view' : 'Advanced view'; if (open) research.redraws.forEach(f => f()); } }, 'Advanced view');
-    container.append(legend, speakerLegend, stack, ticks, nav, panel, el('div', { class: 'cs-advrow' }, advBtn), research.box, metadataBox(data));
-    if (/advanced/.test(location.hash)) advBtn.click();
+    container.append(legend, speakerLegend, stack, ticks, nav, panel, research.box, metadataBox(data));
+    if (/advanced/.test(location.hash)) research.box.open = true;
     const m = /[#&]t=([\d.]+)/.exec(location.hash); if (m) { const jump = () => { video.currentTime = parseFloat(m[1]); }; video.readyState >= 1 ? jump() : video.addEventListener('loadedmetadata', jump, { once: true }); }
 
     const level = data.tracks && data.tracks.level_db;
-    const redraw = () => { drawWave(wave, level, data.segments, dur, state.hidden); if (!research.box.hidden) research.redraws.forEach(f => f()); };
+    const redraw = () => { drawWave(wave, level, data.segments, dur, state.hidden); if (research.box.open) research.redraws.forEach(f => f()); };
     redraw(); window.addEventListener('resize', redraw);
 
     function refresh() {
@@ -310,7 +312,7 @@
     });
     return { refresh, tick, seek,
       addTier(tier) { (data.research = data.research || { tracks: [], tiers: [] }).tiers.push(tier); const lanes = research.box.querySelector('.cs-lanes'); lanes.append(el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, tier.label), tierRow(tier, dur, data.research.tiers.length - 1, video))); },
-      addTrack(track) { (data.research = data.research || { tracks: [], tiers: [] }).tracks.push(track); const lanes = research.box.querySelector('.cs-lanes'); const lane = el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, track.label)); if (track.kind === 'curve') { const c = el('canvas', { class: 'cs-lane-canvas' }); lane.append(c); research.redraws.push(() => drawCurve(c, track, dur)); } else if (track.kind === 'state') lane.append(stateRow(track, dur)); else if (track.kind === 'image') lane.append(el('img', { class: 'cs-lane-img', src: track.image })); lanes.append(lane); if (!research.box.hidden) research.redraws.forEach(f => f()); },
+      addTrack(track) { (data.research = data.research || { tracks: [], tiers: [] }).tracks.push(track); const lanes = research.box.querySelector('.cs-lanes'); const lane = el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, track.label)); if (track.kind === 'curve') { const c = el('canvas', { class: 'cs-lane-canvas' }); lane.append(c); research.redraws.push(() => drawCurve(c, track, dur)); } else if (track.kind === 'state') lane.append(stateRow(track, dur)); else if (track.kind === 'image') lane.append(el('img', { class: 'cs-lane-img', src: track.image })); lanes.append(lane); if (research.box.open) research.redraws.forEach(f => f()); },
       data };
   }
 
@@ -351,8 +353,7 @@
 .cs-dl dt{color:var(--cs-muted)}.cs-dl dd{margin:0}
 .cs-detail details{font-size:13px;color:var(--cs-muted);margin-top:6px}.cs-detail summary{cursor:pointer;color:var(--cs-fg)}
 .cs-intro{margin:6px 0 0;font-style:italic;color:var(--cs-muted)}
-.cs-advrow{margin:14px 0 6px} .cs-adv{background:transparent;color:var(--cs-muted);border:1px dashed var(--cs-border);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;font-size:12px} .cs-adv:hover{color:var(--cs-fg);border-style:solid}
-.cs-research{margin-top:8px} .cs-research-intro{margin:0 0 8px;font-size:13px}
+.cs-research-inner{margin-top:10px} .cs-research-intro{margin:0 0 8px;font-size:13px}
 .cs-stack-research{cursor:crosshair} .cs-lanes{display:grid}
 .cs-lane{position:relative;border-top:1px solid var(--cs-border);padding-top:14px;min-height:30px;background:var(--cs-card)}
 .cs-lane-label{position:absolute;top:1px;left:6px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--cs-muted);pointer-events:none;z-index:2}
@@ -360,7 +361,7 @@
 .cs-lane-states{position:relative;height:14px} .cs-lane-states i{position:absolute;top:0;bottom:0}
 .cs-tier{position:relative;height:16px} .cs-tier-iv{position:absolute;top:2px;bottom:2px;opacity:.85;cursor:pointer;border-radius:2px} .cs-tier-pt{position:absolute;top:0;bottom:0;width:2px!important;opacity:.9;cursor:pointer}
 .cs-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:12px} .cs-tools button{background:var(--cs-card);color:var(--cs-fg);border:1px solid var(--cs-border);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;font-size:12px}
-.cs-meta{margin-top:16px;background:var(--cs-card);border:1px solid var(--cs-border);border-radius:8px;padding:10px 12px;font-size:13px}
+.cs-meta{margin-top:12px;background:var(--cs-card);border:1px solid var(--cs-border);border-radius:8px;padding:10px 12px;font-size:13px}
 .cs-meta summary{cursor:pointer;font-weight:600}
 .cs-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}
 .cs-meta h4{margin:6px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--cs-muted)}
