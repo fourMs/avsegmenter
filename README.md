@@ -1,7 +1,7 @@
 # avsegmenter
 
-Segment audio-visual recordings of events, concerts, lectures, PhD defences, panels, into **parts,
-pieces, speaker turns and segments**, describe each, and export a web player and standard archival
+Segment audio-visual recordings of events, concerts, lectures, PhD defences, panels, into parts,
+pieces, speaker turns and segments, describe each, and export a web player and standard archival
 metadata. Runs locally; nothing leaves the machine unless you ask it to.
 
 Built on three toolboxes from the fourMs lab at the University of Oslo:
