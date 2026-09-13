@@ -8,7 +8,8 @@
 
 - `segments.json`: everything the analysis found (automatic; overwritten on every run)
 - `curated.json`: what a person decided (title, people and roles, license, privacy level, per-work rights status, speaker names; never written by the analysis)
-- `player.html`, `chapters.vtt`, `thumbs/`, `videogram.png`: the web layer
+- `player.html`, `chapters.vtt`, `captions.vtt`, `thumbs/`, `videogram.png`, `motiongram.png`, `colourgram.png`: the web layer. The player has a clean main view for an audience and a collapsible advanced view that shows every research track and tier (level, loudness, quantity of motion, camera state, colour, audio descriptors) for students and researchers; both in UiO's type and the DAM's palette
+- `research_additions.json`: tracks and tiers added later by researchers or other software (`avsegmenter add-track`, `add-tier` from ELAN or CSV; never written by the analysis)
 - `export/`: the standard metadata, generated from the two JSON files above:
 
 | File | Standard | Purpose |
