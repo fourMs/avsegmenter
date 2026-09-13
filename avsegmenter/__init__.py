@@ -1,4 +1,4 @@
-"""avsegmenter: segment audio-visual recordings of events (concerts, lectures, defences, panels) into
+"""avsegmenter: segment audio–video recordings of events (concerts, lectures, defences, panels) into
 parts, pieces, speaker turns and segments; describe them; export players and standard metadata.
 
 Built on three toolboxes from the fourMs lab:

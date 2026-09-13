@@ -1,4 +1,4 @@
-# Metadata for IMV's audio-visual recordings: the approach
+# Metadata for IMV's audio–video recordings: the approach
 
 *For HUMIT. One page on what the analysis produces, which standards it speaks, and what the DAM needs to do with it.*
 

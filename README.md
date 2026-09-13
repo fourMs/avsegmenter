@@ -1,6 +1,6 @@
 # avsegmenter
 
-Segment audio-visual recordings of events, concerts, lectures, PhD defences, panels, into parts,
+Segment audio–video recordings of events, concerts, lectures, PhD defences, panels, into parts,
 pieces, speaker turns and segments, describe each, and export a web player and standard archival
 metadata. Runs locally; nothing leaves the machine unless you ask it to.
 
