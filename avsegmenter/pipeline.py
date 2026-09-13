@@ -81,7 +81,9 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
     qs = motion.qom_per_second(adir) if adir else None
     cam = None
     if "video" not in skip:
-        motion.videogram_png(video, out_dir, out_dir / "videogram.png", log=log)
+        motion.videogram_png(video, out_dir, out_dir / "videogram.png", log=log, analysis_dir=adir)
+        from musicalgestures._camera import make_proxy
+        make_proxy(video, out_dir / "proxy_videogram.mp4")          # the camera analysis needs the proxy either way
         cam = camera.analyse_camera(out_dir / "proxy_videogram.mp4", out_dir, log=log)
     if qs is not None:
         qs = motion.mask_camera(qs, cam)

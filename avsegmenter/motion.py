@@ -62,15 +62,30 @@ def segment_motion(qs: np.ndarray, seg: Segment) -> dict:
             "still_seconds": int(v.size)}
 
 
-def videogram_png(video: Path, out_dir: Path, out_png: Path, fps: float = 2.0, height: int = 180, log=print) -> Path | None:
-    """A true videogram of the whole concert (MGT ``videograms()``, average mode) as a wide PNG.
+def videogram_png(video: Path, out_dir: Path, out_png: Path, fps: float = 2.0, height: int = 180, log=print,
+                  analysis_dir: Path | None = None) -> Path | None:
+    """A true videogram of the whole recording as a wide PNG.
 
-    Note that the ``videogram_*.u1`` tracks written by ``extract_tracks`` are computed from the motion
-    frame and are therefore motiongrams. For the picture itself, the video is first reduced to ``fps``
-    frames per second and ``height`` pixels (one ffmpeg pass, cached as proxy_videogram.mp4) and MGT's
-    videogram is taken of that proxy, so one column stands for 1/``fps`` s."""
+    When MGT motion tracks exist (`analysis_dir` with a ``videogram_v`` key in tracks.json, written by
+    musicalgestures >= the #383 fix) the columns come straight from ``read_columns``; otherwise the video
+    is reduced to ``fps`` frames per second and ``height`` pixels once (proxy_videogram.mp4, also used for
+    the camera analysis) and MGT's ``videograms()`` is taken of the proxy."""
     if out_png.exists():
         return out_png
+    if analysis_dir is not None:
+        try:
+            import json
+            from musicalgestures._tracks import read_columns
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            meta = json.loads((Path(analysis_dir) / "tracks.json").read_text())
+            if "videogram_v" in meta and "motiongram_v" in meta:
+                cols, _ = read_columns(str(analysis_dir), max_columns=2000, which="videogram_v")
+                plt.imsave(str(out_png), np.asarray(cols).T, cmap="gray", vmin=0, vmax=255)
+                return out_png
+        except Exception as e:  # noqa: BLE001
+            log(f"  videogram from tracks skipped: {e}")
     proxy = out_dir / "proxy_videogram.mp4"
     if not proxy.exists():
         cmd = ["ffmpeg", "-v", "error", "-y", "-i", str(video), "-vf", f"fps={fps},scale=-2:{height}", "-an",
@@ -92,7 +107,7 @@ def videogram_png(video: Path, out_dir: Path, out_png: Path, fps: float = 2.0, h
             return None
         cv2.imwrite(str(out_png), wide[1])
         return out_png
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         log(f"  MGT videogram skipped: {e}")
         return None
 
