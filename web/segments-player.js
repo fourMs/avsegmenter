@@ -329,7 +329,7 @@
 .cs-block:hover{background:rgba(127,127,127,.15)}
 .cs-block.cs-on{border-bottom-color:var(--cs-accent)}
 .cs-num{position:absolute;top:2px;transform:translateX(-50%);font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 1px #000;pointer-events:none;font-family:Helvetica,Arial,sans-serif}
-.cs-parts{position:relative;height:16px;background:var(--cs-card)} .cs-part{position:absolute;top:2px;bottom:2px;background:var(--cs-mark);opacity:.25;border-radius:2px;overflow:hidden;white-space:nowrap} .cs-part b{font-size:10px;line-height:12px;padding:0 4px;color:var(--cs-card);opacity:1;font-weight:600}
+.cs-parts{position:relative;height:16px;background:var(--cs-card)} .cs-part{position:absolute;top:2px;bottom:2px;background:var(--cs-accent);opacity:.3;border-radius:2px;overflow:hidden;white-space:nowrap} .cs-part b{font-size:10px;line-height:12px;padding:0 4px;color:var(--cs-card);opacity:1;font-weight:600}
 .cs-speakers{position:relative;height:14px;border-top:1px solid var(--cs-border);background:var(--cs-card)} .cs-turn{position:absolute;top:2px;bottom:2px;cursor:pointer;opacity:.9} .cs-turn:hover{opacity:1;filter:brightness(1.2)}
 .cs-legend-spk{margin-top:-2px} .cs-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px}
 .cs-cuts{position:relative;height:5px;background:var(--cs-card)}.cs-cut{position:absolute;top:0;bottom:0;width:1px;background:var(--cs-mark);opacity:.8}
