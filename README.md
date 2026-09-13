@@ -91,6 +91,16 @@ song finder → move each piece's start back to the first sound. The chain lives
 | Instruments, genre | AudioSet tags | dominant instruments reliable; bass guitar vs double bass weak; genre tags coarse |
 | Copyright | fingerprints + the programme | live performances do not match released recordings; the works list decides; rights status is curated |
 
+## Look and feel
+
+The player, the reports and the documentation pages follow the University of Oslo web profile and the
+DAM application it will sit in: Helvetica/Arial with black, normal-weight headings and underlined
+links, a slate ground with white cards and a swamp-green accent, no external fonts. The player is
+light by default with a dark toggle. Everything is driven by CSS custom properties (`--cs-fg`,
+`--cs-card`, `--cs-border`, `--cs-accent`, `--cs-mark`, …) on the container, so another institution
+changes the look by setting those on `.cs-root`. `docs/render_page.py` renders a Markdown page in the
+same look.
+
 ## Documentation
 
 - `docs/architecture.md`: stages, caches, module map

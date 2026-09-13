@@ -9,33 +9,34 @@ COL = {"music": "var(--music)", "speech": "var(--talk)", "applause": "var(--appl
 NAMES = [("music", "Music"), ("speech", "Talk"), ("applause", "Applause"), ("silence", "Silence"), ("other", "Other")]
 DASH = "–"
 CSS = """
-:root{--paper:#f2f4f6;--card:#ffffff;--ink:#171a21;--ink2:#4b5260;--line:#d7dbe2;--music:#2f5bd6;--talk:#d08a1a;--applause:#1f9a6a;--silence:#8d929c;--other:#8a5bc4;--flag:#b8471c;--flagbg:#fbe9e1}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#141720;--card:#1c202b;--ink:#eceef2;--ink2:#a3aab8;--line:#2d3340;--music:#5b82ec;--talk:#e3a444;--applause:#38b483;--silence:#6f7683;--other:#a57de0;--flag:#f0a07a;--flagbg:#3a251c}}
-:root[data-theme="dark"]{--paper:#141720;--card:#1c202b;--ink:#eceef2;--ink2:#a3aab8;--line:#2d3340;--music:#5b82ec;--talk:#e3a444;--applause:#38b483;--silence:#6f7683;--other:#a57de0;--flag:#f0a07a;--flagbg:#3a251c}
-body{background:var(--paper);color:var(--ink);font:15px/1.55 "IBM Plex Sans",system-ui,sans-serif;padding-block:32px 56px;padding-inline:20px}
+/* UiO web profile (Helvetica/Arial, black text, normal-weight headings, underlined links) on the DAM palette (slate ground, white cards, swamp-green accent) */
+:root{--paper:#f8fafc;--card:#ffffff;--ink:#0f172a;--ink2:#475569;--line:#e2e8f0;--accent:#4c6239;--music:#2f5bd6;--talk:#d08a1a;--applause:#1f9a6a;--silence:#8d929c;--other:#8a5bc4;--flag:#b60000;--flagbg:#fdecec}
+:root[data-theme="dark"]{--paper:#0f172a;--card:#1e293b;--ink:#e2e8f0;--ink2:#94a3b8;--line:#334155;--accent:#8fae76;--music:#5b82ec;--talk:#e3a444;--applause:#38b483;--silence:#6f7683;--other:#a57de0;--flag:#ff8080;--flagbg:#3a1c1c}
+body{background:var(--paper);color:var(--ink);font:17px/1.5 Helvetica,Arial,sans-serif;padding-block:32px 56px;padding-inline:20px}
 .wrap{max-width:900px;margin:0 auto;display:grid;gap:40px}
-h1,h2,h3{font-family:"Instrument Serif",Georgia,serif;font-weight:400;text-wrap:balance;margin:0}
-h1{font-size:44px;line-height:1.05} h2{font-size:28px;margin-bottom:12px} h3{font-size:23px;margin-top:2px}
-.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
-.facts{display:flex;flex-wrap:wrap;gap:6px 22px;color:var(--ink2);margin-top:10px;font-size:14px} .facts b{color:var(--ink);font-weight:500}
-.tc,.dur,.tk,.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
-svg{width:100%;height:auto;display:block} .num{font-size:15px;fill:var(--ink);font-weight:500} .tk{font-size:12px;fill:var(--ink2)} .tick{stroke:var(--line);stroke-width:1.5}
-.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--ink2);margin-top:8px} .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px} .legend b{color:var(--ink);font-weight:500;margin-left:4px}
-table{width:100%;border-collapse:collapse;font-size:14px} td{padding:9px 10px 9px 0;border-top:1px solid var(--line);vertical-align:top} tr:first-child td{border-top:0} td.tc{width:2.2em;color:var(--ink2)}
-.ok{color:var(--applause);font-weight:500} .no{color:var(--flag);font-weight:500}
+h1,h2,h3{font-family:Helvetica,Arial,sans-serif;font-weight:400;text-wrap:balance;margin:0}
+h1{font-size:40px;line-height:1.2} h2{font-size:31px;margin-bottom:12px} h3{font-size:21px;margin-top:2px}
+a{color:var(--ink);text-decoration:underline;text-underline-offset:.2em;text-decoration-thickness:.05em}
+.eyebrow{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 22px;color:var(--ink2);margin-top:10px;font-size:15px} .facts b{color:var(--ink);font-weight:400}
+.tc,.dur,.tk,.num{font-family:Menlo,Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
+svg{width:100%;height:auto;display:block} .num{font-size:15px;fill:var(--ink);font-weight:700;font-family:Helvetica,Arial,sans-serif} .tk{font-size:12px;fill:var(--ink2)} .tick{stroke:var(--line);stroke-width:1.5}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:14px;color:var(--ink2);margin-top:8px} .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px} .legend b{color:var(--ink);font-weight:400;margin-left:4px}
+table{width:100%;border-collapse:collapse;font-size:15px} td{padding:9px 10px 9px 0;border-top:1px solid var(--line);vertical-align:top} tr:first-child td{border-top:0} td.tc{width:2.2em;color:var(--ink2)}
+.ok{color:var(--accent)} .no{color:var(--flag)}
 .pieces{display:grid;gap:14px}
-.piece{display:grid;grid-template-columns:34px 200px 1fr;gap:16px;background:var(--card);border:1px solid var(--line);padding:16px;border-radius:6px}
-.pn{font-family:"Instrument Serif",serif;font-size:34px;line-height:1;color:var(--music)}
-.piece figure{margin:0} .piece img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:3px;display:block;background:#000}
-.pb header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px} .tc{font-size:14px} .dur{font-size:12px;color:var(--ink2)}
+.piece{display:grid;grid-template-columns:34px 200px 1fr;gap:16px;background:var(--card);border:1px solid var(--line);padding:16px;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.pn{font-size:30px;line-height:1;color:var(--accent)}
+.piece figure{margin:0} .piece img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;display:block;background:#000}
+.pb header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px} .tc{font-size:14px} .dur{font-size:13px;color:var(--ink2)}
 .who{margin:0 0 8px;color:var(--ink2)}
-dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;margin:0;font-size:14px} dt{color:var(--ink2)} dd{margin:0}
-.dim{color:var(--ink2)} .flag{font-size:11px;padding:1px 6px;border-radius:3px;background:var(--flagbg);color:var(--flag);vertical-align:1px}
-.qa{display:grid;gap:14px} .qa div{display:grid;grid-template-columns:150px 1fr;gap:14px;padding-top:12px;border-top:1px solid var(--line)} .qa div:first-child{border-top:0;padding-top:0} .qa b{font-weight:500} .qa p{margin:0;max-width:66ch}
-.verdict{font-size:12px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:4px} .yes{color:var(--applause)} .part{color:var(--talk)} .nov{color:var(--flag)}
-code{font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--card);border:1px solid var(--line);padding:1px 5px;border-radius:3px}
-footer{color:var(--ink2);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
-@media (max-width:640px){.piece{grid-template-columns:28px 1fr} .piece figure{grid-column:2} .pb{grid-column:1/-1} .qa div{grid-template-columns:1fr} h1{font-size:34px}}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;margin:0;font-size:15px} dt{color:var(--ink2)} dd{margin:0}
+.dim{color:var(--ink2)} .flag{font-size:12px;padding:1px 6px;border-radius:3px;background:var(--flagbg);color:var(--flag);vertical-align:1px}
+.qa{display:grid;gap:14px} .qa div{display:grid;grid-template-columns:170px 1fr;gap:14px;padding-top:12px;border-top:1px solid var(--line)} .qa div:first-child{border-top:0;padding-top:0} .qa b{font-weight:400} .qa p{margin:0;max-width:66ch}
+.verdict{font-size:12px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:4px} .yes{color:var(--accent)} .part{color:var(--talk)} .nov{color:var(--flag)}
+code{font-family:Menlo,Consolas,"Liberation Mono",monospace;font-size:14px;background:var(--card);border:1px solid var(--line);padding:1px 5px;border-radius:3px}
+footer{color:var(--ink2);font-size:14px;border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:640px){.piece{grid-template-columns:28px 1fr} .piece figure{grid-column:2} .pb{grid-column:1/-1} .qa div{grid-template-columns:1fr} h1{font-size:32px}}
 """
 
 
@@ -186,7 +187,7 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
     tools = d.get("tools") or {}
     qa_section = f'<section><h2>What the analysis answers</h2><div class="qa">{qa_html}</div></section>' if qa else ""
     return (f'<title>{_h(title or d["title"])}</title>\n'
-            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">\n'
+            
             f'<style>{CSS}</style>\n<div class="wrap">\n'
             f'<section><div class="eyebrow">{_h(eyebrow)}</div><h1>{_h(title or d["title"])}</h1><div class="facts">{facts}</div></section>\n'
             f'<section><div class="eyebrow">Timeline</div>{svg}<div class="legend">{legend}</div></section>\n'

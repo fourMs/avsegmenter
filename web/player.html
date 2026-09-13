@@ -5,20 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Concert segments</title>
 <style>
-  :root{--bg:#f3f5f8;--fg:#171a21;--muted:#5b6473;--card:#ffffff;--border:#d7dbe3;--kbd:#e8ebf0;color-scheme:light}
-  :root[data-theme="dark"]{--bg:#0b1220;--fg:#e5e7eb;--muted:#9ca3af;--card:#1f2937;--border:#374151;--kbd:#1f2937;color-scheme:dark}
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--fg:#e5e7eb;--muted:#9ca3af;--card:#1f2937;--border:#374151;--kbd:#1f2937;color-scheme:dark}}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px}
-  .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
-  h1{font-size:20px;margin:0}
-  #theme{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;font:inherit;font-size:12px}
-  video{width:100%;max-height:62vh;background:#000;border-radius:8px}
-  .kbd{color:var(--muted);font-size:12px}
+  /* UiO web profile: Helvetica/Arial, black text, normal-weight headings; DAM palette: slate ground, white cards, swamp-green accent */
+  :root{--bg:#f8fafc;--fg:#0f172a;--muted:#475569;--card:#ffffff;--border:#e2e8f0;--kbd:#f1f5f9;--accent:#4c6239;--accent-fg:#ffffff;--uio-red:#b60000;color-scheme:light}
+  :root[data-theme="dark"]{--bg:#0f172a;--fg:#e2e8f0;--muted:#94a3b8;--card:#1e293b;--border:#334155;--kbd:#1e293b;--accent:#8fae76;--accent-fg:#0f172a;color-scheme:dark}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+  .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+  h1{font-size:26px;font-weight:400;line-height:1.2;margin:0;text-wrap:balance}
+  #theme{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;font-size:13px}
+  video{width:100%;max-height:62vh;background:#000;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .kbd{color:var(--muted);font-size:13px}
   kbd{background:var(--kbd);border:1px solid var(--border);border-radius:4px;padding:0 5px;font-family:inherit}
-  footer{color:var(--muted);font-size:12px;margin:24px 0;display:grid;gap:6px;max-width:70ch}
+  footer{color:var(--muted);font-size:13px;margin:24px 0;display:grid;gap:6px;max-width:70ch}
   footer p{margin:0}
-  .cs-root{--cs-fg:var(--fg);--cs-muted:var(--muted);--cs-card:var(--card);--cs-border:var(--border)}
+  a{color:var(--fg);text-decoration:underline;text-underline-offset:.2em;text-decoration-thickness:.05em}
+  .cs-root{--cs-fg:var(--fg);--cs-muted:var(--muted);--cs-card:var(--card);--cs-border:var(--border);--cs-accent:var(--accent);--cs-accent-fg:var(--accent-fg);--cs-mark:var(--uio-red)}
 </style>
 </head>
 <body>
@@ -38,8 +39,8 @@
   (function () {
     const root = document.documentElement, btn = document.getElementById('theme');
     let saved = null; try { saved = localStorage.getItem('cs-theme'); } catch (e) {}
-    if (saved) root.dataset.theme = saved;
-    const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = saved || 'light';
+    const isDark = () => root.dataset.theme === 'dark';
     const label = () => { btn.textContent = isDark() ? 'Light mode' : 'Dark mode'; };
     btn.addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('cs-theme', root.dataset.theme); } catch (e) {} label(); });
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', label); label();
