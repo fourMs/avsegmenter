@@ -30,7 +30,11 @@ semester-start concert (87 min, nine acts, moving camera) and a PhD defence (3 h
   IIIF Presentation 3 with nested ranges and annotation pages, W3C Web Annotation, schema.org JSON-LD,
   PREMIS 3 provenance, BagIt 1.0 bags for deposit; a curated overlay (`curated.json`) that a re-run
   never overwrites.
-- Report generator (`avsegmenter.report`) for a shareable HTML summary.
+- Report generator (`avsegmenter.report`) for a shareable HTML summary; `docs/render_page.py` for
+  documentation pages in the same look.
+- Look and feel after the UiO web profile (Helvetica/Arial, black normal-weight headings, underlined
+  links) on the DAM palette (slate ground, white cards, swamp-green accent), light by default, no
+  external fonts, overridable through custom properties on `.cs-root`.
 - Quality and deposit: EBU R128 loudness, QC items (EBU Tech 3363 subset) as a PREMIS event, captions
   (WebVTT), derivatives manifest, JAMS export of the tiers, and a METS envelope with a timed structural
   map; standard audio descriptors with MPEG-7 names, picture brightness/saturation and a colourgram,

@@ -26,7 +26,7 @@ For one recording, one folder:
 
 ```bash
 pip install -e .                       # plus the three toolboxes and their [ml] extras
-pip install ultralytics speechbrain    # people detection, speaker turns
+pip install ultralytics speechbrain av # people detection, speaker turns, codec motion vectors
 # transcripts: any interpreter with faster-whisper, passed with --whisper-python
 ```
 
@@ -110,8 +110,8 @@ same look.
 - `examples/`: curated and programme files, report drivers and a GPU-decode prep script from the two test cases
 - `CHANGELOG.md`
 
-Tests: `python -m pytest tests` (fusion, parts, roles, stage detection, exports incl. EBUCore structure,
-IIIF shape and bag integrity).
+Tests: `python -m pytest tests` (fusion, parts, roles, stage detection, research importers, loudness and
+QC parsing, captions, and the exports incl. EBUCore structure, IIIF shape, JAMS, METS and bag integrity).
 
 ## Licence
 

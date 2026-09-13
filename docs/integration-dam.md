@@ -47,7 +47,15 @@ Three levels, any of which works on its own:
 3. IIIF viewer: point a IIIF audio/video viewer (Clover, Ramp, Mirador with the A/V plugin) at
    `…/analysis/export/manifest.json`; the parts and pieces appear as its table of contents.
 
-Also embed `export/schemaorg.json` in the page head for discovery.
+Also add `<track kind="captions" src="…/analysis/captions.vtt">` for the transcript, and embed
+`export/schemaorg.json` in the page head for discovery.
+
+The component renders the main view for an audience and, in a collapsible box, an advanced view with
+every research track and tier in the record; both follow the DAM's palette (slate ground, white cards,
+swamp-green accent) and UiO's type (Helvetica/Arial). Override the look from the DAM stylesheet with the
+custom properties on `.cs-root` (`--cs-fg`, `--cs-muted`, `--cs-card`, `--cs-border`, `--cs-accent`,
+`--cs-accent-fg`, `--cs-mark`); set `data-theme="dark"` on the root element for the dark variant.
+Deep links work with `#t=seconds` and `#advanced`.
 
 ## Editing
 
@@ -57,8 +65,12 @@ embargo. The analysis reads it and never writes it. Field list: `record-schema.m
 
 ## Deposit
 
-`--bag` writes a BagIt bag with the media hard-linked; hand it to the repository, or hand over
-`export/ebucore.xml` alone where the repository wants a record rather than a package.
+`--bag` writes a BagIt bag with the media hard-linked, the exports, the web layer and `mets.xml`, whose
+file section and timed structural map describe the payload; hand the bag to the repository, or hand over
+`export/ebucore.xml` alone where the repository wants a record rather than a package. Loudness (EBU R128)
+and the QC items travel in EBUCore technical attributes, in the METS technical section and as a PREMIS
+quality-control event; the transcript goes as `captions.vtt`; the annotation tiers as JAMS; every derived
+file is listed in the derivatives manifest with its generator and checksum.
 
 ## Notes from the UiO deployment
 
