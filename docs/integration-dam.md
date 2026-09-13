@@ -9,7 +9,7 @@ system, the University of Oslo's DAM (`dam.hf.uio.no`, a Next.js app that render
 One analysis folder per asset, next to the media (for asset `imv/20162`:
 `collections/imv/20162/analysis/`), served as static files. It contains `segments.json`,
 `curated.json`, `player.html`, `chapters.vtt`, `thumbs/`, `videogram.png` and `export/` with the
-standard metadata (see `METADATA-APPROACH.md`). Nothing in it is large.
+standard metadata (see `metadata-approach.md`). Nothing in it is large.
 
 ## Running the analysis
 

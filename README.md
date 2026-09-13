@@ -95,7 +95,7 @@ song finder → move each piece's start back to the first sound. The chain lives
 
 - `docs/architecture.md`: stages, caches, module map
 - `docs/record-schema.md`: every field of `segments.json`, `curated.json`, `record.json`
-- `docs/METADATA-APPROACH.md`: the standards (EBUCore, IIIF, schema.org, PREMIS, BagIt) and the five layers
+- `docs/metadata-approach.md`: the standards (EBUCore, IIIF, schema.org, PREMIS, BagIt) and the five layers
 - `docs/integration-dam.md`: attaching the output to a catalog, with the UiO DAM as the worked case
 - `examples/`: curated and programme files, report drivers and a GPU-decode prep script from the two test cases
 - `CHANGELOG.md`

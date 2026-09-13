@@ -34,4 +34,4 @@ All keys optional. Anything here wins over the automatic value and is listed in 
 
 ## `record.json` (canonical, generated)
 
-`schema: urn:avsegmenter:record:1.0`. Five layers: `descriptive`, `technical`, `structural` (`items` = parts and pieces with `kind`, `segments`, `turns`, `speakers`, `camera`, `tracks`), `rights`, `provenance` (software and models, parameters, `curated_fields`). Every export in `export/` is a pure function of this record; see `METADATA-APPROACH.md` for the standards and `../avsegmenter/exports/` for the mappings.
+`schema: urn:avsegmenter:record:1.0`. Five layers: `descriptive`, `technical`, `structural` (`items` = parts and pieces with `kind`, `segments`, `turns`, `speakers`, `camera`, `tracks`), `rights`, `provenance` (software and models, parameters, `curated_fields`). Every export in `export/` is a pure function of this record; see `metadata-approach.md` for the standards and `../avsegmenter/exports/` for the mappings.
