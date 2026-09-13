@@ -6,7 +6,7 @@ system, the University of Oslo's DAM (`dam.hf.uio.no`, a Next.js app that render
 
 ## What the catalog stores
 
-One **analysis folder per asset**, next to the media (for asset `imv/20162`:
+One analysis folder per asset, next to the media (for asset `imv/20162`:
 `collections/imv/20162/analysis/`), served as static files. It contains `segments.json`,
 `curated.json`, `player.html`, `chapters.vtt`, `thumbs/`, `videogram.png` and `export/` with the
 standard metadata (see `METADATA-APPROACH.md`). Nothing in it is large.
@@ -30,9 +30,9 @@ catalog uses. Re-running after edits to `curated.json` takes about a minute (eve
 
 Three levels, any of which works on its own:
 
-1. **Chapters only:** add `<track kind="chapters" src="…/analysis/chapters.vtt" srclang="no" default>`
+1. Chapters only: add `<track kind="chapters" src="…/analysis/chapters.vtt" srclang="no" default>`
    to the video element.
-2. **Timeline component:** load `segments-player.js` and call
+2. Timeline component: load `segments-player.js` and call
    `SegmentsPlayer.mount({ video, url: '…/analysis/segments.json', container, assetBase: '…/analysis/' })`
    in the client component that owns the video. It draws the strips, the detail panel and the metadata
    box under the player and follows the playhead. In a Next.js client component:
@@ -44,7 +44,7 @@ Three levels, any of which works on its own:
      document.body.appendChild(s);
    }, []);
    ```
-3. **IIIF viewer:** point a IIIF audio/video viewer (Clover, Ramp, Mirador with the A/V plugin) at
+3. IIIF viewer: point a IIIF audio/video viewer (Clover, Ramp, Mirador with the A/V plugin) at
    `…/analysis/export/manifest.json`; the parts and pieces appear as its table of contents.
 
 Also embed `export/schemaorg.json` in the page head for discovery.

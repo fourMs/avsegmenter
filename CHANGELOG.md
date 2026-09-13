@@ -2,7 +2,7 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.1.0] — 2026-09-13
+## [0.1.0], 2026-09-13
 
 First release, developed on two recordings of the Department of Musicology, University of Oslo: a
 semester-start concert (87 min, nine acts, moving camera) and a PhD defence (3 h 24 min, 1080p50).
@@ -11,9 +11,9 @@ semester-start concert (87 min, nine acts, moving camera) and a PhD defence (3 h
 - Segmentation of any recording into music / talk / applause / silence / other from AudioSet
   posteriors (PANNs through `ambiscape.ml.tag_frames`, chain in `musiscape.tagging`), with piece
   onsets refined to the first sound.
-- One hierarchy for every recording: **parts** (breaks, applause followed by talk, arrival of a voice
-  that holds the floor) → **pieces** (music) and **speaker turns** (silero VAD + ECAPA + clustering,
-  whenever there are five minutes of talk) → **segments**.
+- One hierarchy for every recording: parts (breaks, applause followed by talk, arrival of a voice
+  that holds the floor) → pieces (music) and speaker turns (silero VAD + ECAPA + clustering,
+  whenever there are five minutes of talk) → segments.
 - Per-piece description: instruments and genre tags (AudioSet), singing, key / tempo / pulse clarity /
   dynamics (musiscape), internal song-change cues, Chromaprint fingerprints with optional AcoustID lookup.
 - People on stage per still camera framing (`musicalgestures.detect_people`, `camera_motion`,

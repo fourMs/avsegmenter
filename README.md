@@ -1,6 +1,6 @@
 # avsegmenter
 
-Segment audio-visual recordings of events — concerts, lectures, PhD defences, panels — into **parts,
+Segment audio-visual recordings of events, concerts, lectures, PhD defences, panels, into **parts,
 pieces, speaker turns and segments**, describe each, and export a web player and standard archival
 metadata. Runs locally; nothing leaves the machine unless you ask it to.
 
@@ -61,9 +61,9 @@ rec = write_all(Path("analysis"), Path("concert.mp4"), base_url="https://example
 ## One hierarchy for every recording
 
 Concerts have talk in them and lectures have music in them, so nothing is gated by the profile.
-**Parts** are cut at long silences (breaks), at applause that is followed by talk, and where a voice
-arrives that then holds the floor. **Pieces** are the music segments. **Speaker turns** come from
-diarization whenever there are five minutes of talk. **Segments** are the raw classes. A concert
+Parts are cut at long silences (breaks), at applause that is followed by talk, and where a voice
+arrives that then holds the floor. Pieces are the music segments. Speaker turns come from
+diarization whenever there are five minutes of talk. Segments are the raw classes. A concert
 without an interval is one part with its pieces and the host's turns; a defence is four parts with any
 demos as pieces; a lecture-recital alternates turns and pieces inside one part.
 
@@ -93,11 +93,11 @@ song finder → move each piece's start back to the first sound. The chain lives
 
 ## Documentation
 
-- `docs/architecture.md` — stages, caches, module map
-- `docs/record-schema.md` — every field of `segments.json`, `curated.json`, `record.json`
-- `docs/METADATA-APPROACH.md` — the standards (EBUCore, IIIF, schema.org, PREMIS, BagIt) and the five layers
-- `docs/integration-dam.md` — attaching the output to a catalog, with the UiO DAM as the worked case
-- `examples/` — curated and programme files, report drivers and a GPU-decode prep script from the two test cases
+- `docs/architecture.md`: stages, caches, module map
+- `docs/record-schema.md`: every field of `segments.json`, `curated.json`, `record.json`
+- `docs/METADATA-APPROACH.md`: the standards (EBUCore, IIIF, schema.org, PREMIS, BagIt) and the five layers
+- `docs/integration-dam.md`: attaching the output to a catalog, with the UiO DAM as the worked case
+- `examples/`: curated and programme files, report drivers and a GPU-decode prep script from the two test cases
 - `CHANGELOG.md`
 
 Tests: `python -m pytest tests` (fusion, parts, roles, stage detection, exports incl. EBUCore structure,
