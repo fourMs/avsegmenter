@@ -38,10 +38,6 @@ def write_all(analysis_dir: Path, video_path: Path | None = None, base_url: str 
             continue
         hop = t.get("hop_s", 1.0)
         (tracks_dir / f"{t['id']}.csv").write_text("time_s,value\n" + "".join(f"{i * hop:.3f},{'' if v is None else v}\n" for i, v in enumerate(t["values"])))
-    findings = validate_all(out)
-    (out / "validation.json").write_text(json.dumps(findings, indent=1))
-    for k, v in findings.items():
-        log(f"  {k}: {'ok' if not v else '; '.join(v[:3])}")
     # METS over the derivative files (paths as they will sit in a bag's data/)
     mets_files = []
     vp0 = Path(rec["technical"]["path"])
@@ -55,6 +51,10 @@ def write_all(analysis_dir: Path, video_path: Path | None = None, base_url: str 
         if p.is_file() and p.name != "mets.xml":
             mets_files.append({"id": f"x{k:02d}", "path": f"export/{p.name}", "mimetype": "application/xml" if p.suffix == ".xml" else "application/json" if p.suffix in (".json", ".jams") else "text/plain", "size": p.stat().st_size, "use": "metadata"})
     (out / "mets.xml").write_bytes(mets_xml(rec, mets_files))
+    findings = validate_all(out)
+    (out / "validation.json").write_text(json.dumps(findings, indent=1))
+    for k, v in findings.items():
+        log(f"  {k}: {'ok' if not v else '; '.join(v[:3])}")
     if bag:
         from .bag import make_bag
         files = {"export/" + p.name: p for p in out.iterdir() if p.is_file()}
