@@ -15,6 +15,7 @@
 | `programme` | the loaded acts, `aligned_to` (pieces / parts), `assignments`, `not_detected` |
 | `metadata` | the rights block as merged from `curated.json`: `license`, `license_url`, `rights_holder`, `privacy` (`level`, `reasons`, `note`, `suggested`), `copyrights[]`, `notes` |
 | `hierarchy`, `summary`, `videogram` | counts per level, seconds per class, the videogram file |
+| `research` | `tracks[]` (`id`, `label`, `kind` curve/state/image, `unit`, `hop_s`, `values`/`states`/`image`, `source`, `range`, `palette`) and `tiers[]` (`id`, `label`, `kind` interval/point, `source`, `items[]` with `start`, `end`, `label`, `attrs`, `confidence`); built-in entries are recomputed each run, entries from `research_additions.json` are kept |
 
 ## `curated.json` (human; never written by the analysis)
 
@@ -31,6 +32,11 @@ All keys optional. Anything here wins over the automatic value and is listed in 
 | `access` (`open` / `restricted`, default restricted), `embargo_until` | access |
 | `speakers` | `{Sx: "Name (role)"}` for the diarization clusters of this run |
 | `notes` | free text shown in the metadata box |
+
+## `research_additions.json` (human or other tools; never written by the analysis)
+
+`{"tracks": [...], "tiers": [...]}` in the same shapes as above, written by `avsegmenter add-track` and
+`avsegmenter add-tier` (with `added` timestamp and `author`). Edit or delete entries freely.
 
 ## `record.json` (canonical, generated)
 

@@ -52,6 +52,15 @@ def iiif_manifest(rec: dict) -> dict:
     annos = [page("segments", seg_annos)]
     if turn_annos: annos.append(page("speaker-turns", turn_annos))
     if cut_annos: annos.append(page("camera-cuts", cut_annos))
+    builtin = {"segments", "pieces", "parts", "turns", "cuts"}
+    for tier in (rec.get("research") or {}).get("tiers", []):
+        if tier["id"] in builtin:
+            continue
+        annos.append(page(f"tier-{tier['id']}", [
+            {"id": f"{base}/annotation/{tier['id']}-{k:04d}", "type": "Annotation", "motivation": "commenting" if tier.get("source", "").startswith(("ELAN", "elan")) else "tagging",
+             "body": {"type": "TextualBody", "value": it.get("label") or tier["label"], "purpose": "tagging"},
+             "target": f"{canvas_id}#t={it['start']}" + (f",{it['end']}" if it.get("end", it["start"]) > it["start"] else "")}
+            for k, it in enumerate(tier.get("items", []))]))
     rights = rec["rights"]
     manifest = {
         "@context": CTX, "id": f"{base}/manifest.json", "type": "Manifest",
@@ -73,7 +82,9 @@ def iiif_manifest(rec: dict) -> dict:
                    "annotations": annos}],
         "structures": ranges,
         "seeAlso": [{"id": f"{base}/ebucore.xml", "type": "Dataset", "format": "application/xml", "profile": "urn:ebu:metadata-schema:ebucore", "label": _lang(rec, "EBUCore record")},
-                    {"id": f"{base}/segments.json", "type": "Dataset", "format": "application/json", "label": _lang(rec, "Analysis (segments.json)")}],
+                    {"id": f"{base}/segments.json", "type": "Dataset", "format": "application/json", "label": _lang(rec, "Analysis (segments.json)")}]
+                   + [{"id": f"{base}/tracks/{t['id']}.csv", "type": "Dataset", "format": "text/csv", "label": _lang(rec, t.get("label") or t["id"])}
+                      for t in (rec.get("research") or {}).get("tracks", []) if t.get("kind") == "curve"],
     }
     return manifest
 

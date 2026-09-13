@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from .config import Config
-from . import audio, tagging, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod
+from . import audio, tagging, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod, research
 
 
 def _versions() -> dict:
@@ -87,6 +87,8 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         cam = camera.analyse_camera(out_dir / "proxy_videogram.mp4", out_dir, log=log)
     if qs is not None:
         qs = motion.mask_camera(qs, cam)
+    if adir and not (out_dir / "motiongram.png").exists():
+        research.motiongram_png(adir, out_dir / "motiongram.png")
 
     log("7/9 speech transcription")
     full = out_dir / "whisper_full.json"
@@ -259,6 +261,7 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         "programme": plan,
         "summary": {k: round(sum(s.duration for s in segs if s.kind == k), 1) for k in fusion.KINDS},
     }
+    data["research"] = research.research_block(data, out_dir)
     log("9/9 export")
     export.write_json(data, out_dir / "segments.json")
     export.write_vtt(data, out_dir / "chapters.vtt")

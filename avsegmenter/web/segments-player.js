@@ -144,6 +144,81 @@
       el('div', { class: 'cs-meta-grid' }, el('div', null, el('h4', null, 'Recording'), dl), el('div', null, el('h4', null, 'Rights'), lic, privRow, el('h4', null, 'Known copyrights'), cr, m.notes ? el('p', { class: 'cs-muted' }, m.notes) : null)));
   }
 
+  // ---------- research view (hidden by default): generic tracks and tiers from data.research
+  const TIER_COLORS = ['#e11d48', '#0ea5e9', '#84cc16', '#f97316', '#8b5cf6', '#14b8a6', '#eab308', '#ec4899'];
+  function drawCurve(canvas, track, dur) {
+    const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1), H = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+    const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, W, H);
+    const v = track.values || []; if (!v.length) return;
+    const finite = v.filter(x => x != null && Number.isFinite(x));
+    const [lo, hi] = track.range || [Math.min(...finite), Math.max(...finite)];
+    const hop = track.hop_s || 1, n = v.length;
+    ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue('--cs-fg') || '#888'; ctx.lineWidth = 1; ctx.beginPath(); let pen = false;
+    for (let x = 0; x < W; x++) {
+      const i = Math.min(n - 1, Math.floor(x / W * (dur / hop)));
+      const y = v[i]; if (y == null || !Number.isFinite(y)) { pen = false; continue; }
+      const py = H - 2 - Math.max(0, Math.min(1, (y - lo) / ((hi - lo) || 1))) * (H - 4);
+      if (!pen) { ctx.moveTo(x, py); pen = true; } else ctx.lineTo(x, py);
+    }
+    ctx.stroke();
+  }
+  function stateRow(track, dur) {
+    const row = el('div', { class: 'cs-lane-states' });
+    const st = track.states || [], hop = track.hop_s || 1, pal = track.palette || {};
+    let i = 0;
+    while (i < st.length) {
+      let j = i; while (j + 1 < st.length && st[j + 1] === st[i]) j++;
+      if (st[i] != null) row.append(el('i', { style: `left:${pct(i * hop / dur)};width:${pct(((j - i + 1) * hop) / dur)};background:${pal[st[i]] || speakerColor(st[i])}`, title: String(st[i]) }));
+      i = j + 1;
+    }
+    return row;
+  }
+  function tierRow(tier, dur, k, video) {
+    const row = el('div', { class: 'cs-tier' });
+    const color = TIER_COLORS[k % TIER_COLORS.length];
+    (tier.items || []).forEach(it => {
+      const w = Math.max(0.0008, ((it.end ?? it.start) - it.start) / dur);
+      const b = el('i', { class: tier.kind === 'point' || (it.end ?? it.start) <= it.start ? 'cs-tier-pt' : 'cs-tier-iv', style: `left:${pct(it.start / dur)};width:${pct(w)};background:${color}`,
+        title: `${fmt(it.start)}${(it.end ?? it.start) > it.start ? '–' + fmt(it.end) : ''} ${it.label || ''}`, onclick: (e) => { e.stopPropagation(); video.currentTime = it.start; } });
+      row.append(b);
+    });
+    return row;
+  }
+  function csvOf(data, t0, t1) {
+    const lines = ['tier,start_s,end_s,label'];
+    for (const tier of (data.research && data.research.tiers) || []) for (const it of tier.items || []) if ((it.end ?? it.start) >= t0 && it.start <= t1) lines.push(`${tier.id},${it.start},${it.end ?? it.start},"${String(it.label || '').replace(/"/g, '""')}"`);
+    for (const tr of (data.research && data.research.tracks) || []) if (tr.kind === 'curve') { const hop = tr.hop_s || 1; tr.values.forEach((v, i) => { const t = i * hop; if (t >= t0 && t <= t1) lines.push(`track:${tr.id},${t},${t},${v == null ? '' : v}`); }); }
+    return lines.join('\n');
+  }
+
+  function researchPanel(data, video, dur, playheadHost) {
+    const R = data.research || { tracks: [], tiers: [] };
+    const box = el('div', { class: 'cs-research', hidden: 'hidden' });
+    const lanes = el('div', { class: 'cs-lanes' });
+    const redraws = [];
+    for (const t of R.tracks) {
+      if (t.kind === 'image' && t.image === data.videogram) continue;                     // already in the main view
+      const lane = el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, t.label + (t.unit ? ` (${t.unit})` : '')));
+      if (t.kind === 'curve') { const c = el('canvas', { class: 'cs-lane-canvas' }); lane.append(c); redraws.push(() => drawCurve(c, t, dur)); }
+      else if (t.kind === 'state') lane.append(stateRow(t, dur));
+      else if (t.kind === 'image') lane.append(el('img', { class: 'cs-lane-img', src: (playheadHost.assetBase || '') + t.image, alt: t.label }));
+      lanes.append(lane);
+    }
+    R.tiers.forEach((tier, k) => {
+      if (['segments'].includes(tier.id)) return;                                            // the waveform colours already show it
+      const lane = el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, `${tier.label} · ${(tier.items || []).length}` + (tier.source ? ` · ${tier.source}` : '')), tierRow(tier, dur, k, video));
+      lanes.append(lane);
+    });
+    const ph = el('div', { class: 'cs-playhead' });
+    const stack = el('div', { class: 'cs-stack cs-stack-research', onclick: (e) => { const r = stack.getBoundingClientRect(); video.currentTime = (e.clientX - r.left) / r.width * dur; } }, lanes, ph);
+    const tools = el('div', { class: 'cs-tools' },
+      el('button', { type: 'button', onclick: () => { const t = video.currentTime; const u = location.href.split('#')[0] + `#t=${t.toFixed(1)}`; navigator.clipboard && navigator.clipboard.writeText(u); prompt('Link to this moment', u); } }, 'Link to this moment'),
+      el('button', { type: 'button', onclick: () => { const s = data.segments.find(x => video.currentTime >= x.start && video.currentTime < x.end) || { start: 0, end: dur }; const blob = new Blob([csvOf(data, s.start, s.end)], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${(data.title || 'recording').replace(/\W+/g, '_')}_${fmt(s.start).replace(/:/g, '-')}.csv`; a.click(); } }, 'Export this segment as CSV'),
+      el('span', { class: 'cs-muted' }, ` ${R.tracks.length} tracks · ${R.tiers.length} tiers · additions via avsegmenter add-track / add-tier`));
+    box.append(el('p', { class: 'cs-muted cs-research-intro' }, 'How we work: every layer below is data from the analysis or added by a researcher; the main view is a selection of it. Click a lane to seek.'), stack, tools);
+    return { box, redraws, playhead: ph };
+  }
+
   function render(data, opts) {
     const video = opts.video, container = opts.container, assetBase = opts.assetBase || '';
     const preroll = opts.preroll == null ? 2 : opts.preroll;
@@ -188,10 +263,14 @@
       el('span', { class: 'cs-navlabel', id: 'cs-navlabel' }, ''),
       el('button', { type: 'button', id: 'cs-next', onclick: () => jump(1) }, 'next ›'));
     const panel = el('div', { class: 'cs-detail' });
-    container.append(legend, speakerLegend, stack, ticks, nav, panel, metadataBox(data));
+    const research = researchPanel(data, video, dur, { assetBase });
+    const advBtn = el('button', { type: 'button', class: 'cs-adv', 'aria-expanded': 'false', onclick: () => { const open = research.box.hidden; research.box.hidden = !open; advBtn.setAttribute('aria-expanded', String(open)); advBtn.textContent = open ? 'Hide advanced view' : 'Advanced view'; if (open) research.redraws.forEach(f => f()); } }, 'Advanced view');
+    container.append(legend, speakerLegend, stack, ticks, nav, panel, el('div', { class: 'cs-advrow' }, advBtn), research.box, metadataBox(data));
+    if (/advanced/.test(location.hash)) advBtn.click();
+    const m = /[#&]t=([\d.]+)/.exec(location.hash); if (m) { const jump = () => { video.currentTime = parseFloat(m[1]); }; video.readyState >= 1 ? jump() : video.addEventListener('loadedmetadata', jump, { once: true }); }
 
     const level = data.tracks && data.tracks.level_db;
-    const redraw = () => drawWave(wave, level, data.segments, dur, state.hidden);
+    const redraw = () => { drawWave(wave, level, data.segments, dur, state.hidden); if (!research.box.hidden) research.redraws.forEach(f => f()); };
     redraw(); window.addEventListener('resize', redraw);
 
     function refresh() {
@@ -206,7 +285,7 @@
     }
     function tick() {
       const t = video.currentTime || 0;
-      playhead.style.left = pct(t / dur);
+      playhead.style.left = pct(t / dur); research.playhead.style.left = pct(t / dur);
       const s = current(); const id = s ? s.id : null;
       const turn = ((data.speakers && data.speakers.turns) || []).find(x => t >= x.start && t < x.end);
       const key = id + '|' + (turn ? turn.start : '');
@@ -229,7 +308,10 @@
       if (e.key === 'n') jump(1);
       if (e.key === 'p') jump(-1);
     });
-    return { refresh, tick, seek };
+    return { refresh, tick, seek,
+      addTier(tier) { (data.research = data.research || { tracks: [], tiers: [] }).tiers.push(tier); const lanes = research.box.querySelector('.cs-lanes'); lanes.append(el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, tier.label), tierRow(tier, dur, data.research.tiers.length - 1, video))); },
+      addTrack(track) { (data.research = data.research || { tracks: [], tiers: [] }).tracks.push(track); const lanes = research.box.querySelector('.cs-lanes'); const lane = el('div', { class: 'cs-lane' }, el('span', { class: 'cs-lane-label' }, track.label)); if (track.kind === 'curve') { const c = el('canvas', { class: 'cs-lane-canvas' }); lane.append(c); research.redraws.push(() => drawCurve(c, track, dur)); } else if (track.kind === 'state') lane.append(stateRow(track, dur)); else if (track.kind === 'image') lane.append(el('img', { class: 'cs-lane-img', src: track.image })); lanes.append(lane); if (!research.box.hidden) research.redraws.forEach(f => f()); },
+      data };
   }
 
   const CSS = `
@@ -269,6 +351,15 @@
 .cs-dl dt{color:var(--cs-muted)}.cs-dl dd{margin:0}
 .cs-detail details{font-size:13px;color:var(--cs-muted);margin-top:6px}.cs-detail summary{cursor:pointer;color:var(--cs-fg)}
 .cs-intro{margin:6px 0 0;font-style:italic;color:var(--cs-muted)}
+.cs-advrow{margin:14px 0 6px} .cs-adv{background:transparent;color:var(--cs-muted);border:1px dashed var(--cs-border);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;font-size:12px} .cs-adv:hover{color:var(--cs-fg);border-style:solid}
+.cs-research{margin-top:8px} .cs-research-intro{margin:0 0 8px;font-size:13px}
+.cs-stack-research{cursor:crosshair} .cs-lanes{display:grid}
+.cs-lane{position:relative;border-top:1px solid var(--cs-border);padding-top:14px;min-height:30px;background:var(--cs-card)}
+.cs-lane-label{position:absolute;top:1px;left:6px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--cs-muted);pointer-events:none;z-index:2}
+.cs-lane-canvas{display:block;width:100%;height:44px;--cs-fg:var(--cs-fg)} .cs-lane-img{display:block;width:100%;height:56px;object-fit:fill}
+.cs-lane-states{position:relative;height:14px} .cs-lane-states i{position:absolute;top:0;bottom:0}
+.cs-tier{position:relative;height:16px} .cs-tier-iv{position:absolute;top:2px;bottom:2px;opacity:.85;cursor:pointer;border-radius:2px} .cs-tier-pt{position:absolute;top:0;bottom:0;width:2px!important;opacity:.9;cursor:pointer}
+.cs-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:12px} .cs-tools button{background:var(--cs-card);color:var(--cs-fg);border:1px solid var(--cs-border);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;font-size:12px}
 .cs-meta{margin-top:16px;background:var(--cs-card);border:1px solid var(--cs-border);border-radius:8px;padding:10px 12px;font-size:13px}
 .cs-meta summary{cursor:pointer;font-weight:600}
 .cs-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}

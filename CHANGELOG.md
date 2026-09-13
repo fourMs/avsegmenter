@@ -31,3 +31,7 @@ semester-start concert (87 min, nine acts, moving camera) and a PhD defence (3 h
   PREMIS 3 provenance, BagIt 1.0 bags for deposit; a curated overlay (`curated.json`) that a re-run
   never overwrites.
 - Report generator (`avsegmenter.report`) for a shareable HTML summary.
+- Research layer: generic `research.tracks` (curve / state / image) and `research.tiers` (interval /
+  point) in the record, an "Advanced view" in the player that draws them as lanes with deep links and
+  CSV export, `avsegmenter add-track` / `add-tier` (ELAN .eaf, ELAN tab export, CSV) stored in
+  `research_additions.json`, tiers exported as IIIF annotation pages and curves as CSV datasets.

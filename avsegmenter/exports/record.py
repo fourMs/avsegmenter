@@ -131,5 +131,6 @@ def build_record(analysis_dir: Path, video_path: Path | None = None, base_url: s
                                   "terms": vocab.CAMERA_STATE_TERMS, "scheme": vocab.MPEG7_CAMERA} if cam else None,
                        "tracks": {"level_db_1hz": (d.get("tracks") or {}).get("level_db")}, "videogram": d.get("videogram")},
         "rights": rights, "provenance": provenance,
+        "research": d.get("research") or {"tracks": [], "tiers": []},
         "files": {"segments": "segments.json", "player": "player.html", "chapters": "chapters.vtt", "videogram": d.get("videogram"), "thumbnails": "thumbs/"},
     }

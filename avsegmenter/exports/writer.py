@@ -24,6 +24,12 @@ def write_all(analysis_dir: Path, video_path: Path | None = None, base_url: str 
     for name in ("chapters.vtt", "segments.json"):
         if (A / name).exists():
             (out / name).write_bytes((A / name).read_bytes())
+    tracks_dir = out / "tracks"; tracks_dir.mkdir(exist_ok=True)
+    for t in (rec.get("research") or {}).get("tracks", []):
+        if t.get("kind") != "curve":
+            continue
+        hop = t.get("hop_s", 1.0)
+        (tracks_dir / f"{t['id']}.csv").write_text("time_s,value\n" + "".join(f"{i * hop:.3f},{'' if v is None else v}\n" for i, v in enumerate(t["values"])))
     findings = validate_all(out)
     (out / "validation.json").write_text(json.dumps(findings, indent=1))
     for k, v in findings.items():

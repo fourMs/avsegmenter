@@ -5,7 +5,43 @@ from .config import Config
 from .pipeline import run
 
 
+def _subcommand(argv) -> int | None:
+    """``avsegmenter add-tier|add-track|refresh OUT ...``: research additions without re-running the analysis."""
+    import json, sys
+    from pathlib import Path
+    from . import research, export
+    args = list(sys.argv[1:] if argv is None else argv)
+    if not args or args[0] not in ("add-tier", "add-track", "refresh"):
+        return None
+    sp = argparse.ArgumentParser(prog=f"avsegmenter {args[0]}")
+    sp.add_argument("out", help="the analysis folder")
+    if args[0] in ("add-tier", "add-track"):
+        sp.add_argument("file", help="ELAN .eaf / ELAN tab export / CSV (add-tier) or CSV time,value (add-track)")
+        sp.add_argument("--id", default=None); sp.add_argument("--label", default=None); sp.add_argument("--author", default=None)
+    if args[0] == "add-track":
+        sp.add_argument("--unit", default=None); sp.add_argument("--hop", type=float, default=1.0)
+    a = sp.parse_args(args[1:])
+    out = Path(a.out)
+    if args[0] == "add-tier":
+        ids = research.add_tier(out, Path(a.file), a.id, a.label, a.author); print("added tiers:", ", ".join(ids))
+    elif args[0] == "add-track":
+        if not a.id:
+            sp.error("--id is required for add-track")
+        print("added track:", research.add_track(out, Path(a.file), a.id, a.label, a.unit, a.hop, a.author))
+    data = json.loads((out / "segments.json").read_text())
+    data["research"] = research.research_block(data, out)
+    export.write_json(data, out / "segments.json")
+    export.write_player(data, out / "player.html", data["video"].get("url") or data["video"]["file"])
+    from .exports import write_all
+    write_all(out, None, base_url=data.get("base_url"), with_checksum=False, log=lambda *x: None)
+    print(f"refreshed {out}/segments.json, player.html and export/")
+    return 0
+
+
 def main(argv=None) -> int:
+    rc = _subcommand(argv)
+    if rc is not None:
+        return rc
     ap = argparse.ArgumentParser(prog="avsegmenter", description="Segment a concert video into pieces / applause / talk.")
     ap.add_argument("video")
     ap.add_argument("-o", "--out", default=None, help="output directory (default: <video dir>/analysis)")
