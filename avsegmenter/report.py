@@ -152,9 +152,14 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
     if d.get("programme"):
         acts = d["programme"]["acts"]
         assign = d["programme"]["assignments"]
+        # A concert aligns its acts to the pieces, through the names heard in the introductions; a
+        # talk aligns them to the parts, by running order. The assignment keys follow, so the table
+        # reads whichever unit the programme was aligned to.
+        to_parts = d["programme"].get("aligned_to") == "parts"
+        units = [p for p in (d.get("parts") or []) if p.get("kind") == "part"] if to_parts else d["pieces"]
         by_act = {}
-        for p in d["pieces"]:
-            j = assign.get(p["id"])
+        for p in units:
+            j = assign.get(p.get("id"))
             if j is not None:
                 by_act.setdefault(j, []).append(p)
         prow = []
@@ -168,9 +173,11 @@ def build_report(analysis_dir, title=None, eyebrow="", qa=None, notes=None) -> s
                 status = '<span class="no">not performed</span>' + (f' · {_h(note)}' if note else "")
             work = _work(a)
             prow.append(f'<tr><td class="tc">{_h(a.get("nr", ""))}</td><td>{_h(a.get("act", ""))}<div class="dim">{_h(work) if _clean(work) else ""}</div></td><td>{status}</td></tr>')
-        order = ", ".join(str(acts[assign[p["id"]]].get("nr")) for p in d["pieces"] if assign.get(p["id"]) is not None)
+        order = ", ".join(str(acts[assign[p["id"]]].get("nr")) for p in units if assign.get(p.get("id")) is not None)
+        how = ("The plan aligned to the detected parts by running order."
+               if to_parts else "The plan aligned to the detected pieces through the host's introductions.")
         plan_html = (f'<section><h2>Running order vs. what happened</h2><p class="dim" style="margin:0 0 10px;max-width:66ch">'
-                     f'The plan aligned to the detected pieces through the host\'s introductions. Actual order: {_h(order)}.</p>'
+                     f'{how} Actual order: {_h(order)}.</p>'
                      f'<table>{"".join(prow)}</table></section>')
 
     summ = d.get("summary") or {}

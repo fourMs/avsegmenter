@@ -2,6 +2,13 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- The running-order table of `report.build_report` read the piece assignments whatever the
+  programme was aligned to, so a talk, whose acts align to parts, reported every act as never
+  performed. The table now reads the unit the programme was aligned to, and says which.
+
 ## [0.1.0], 2026-09-13
 
 First release, developed on two recordings of the Department of Musicology, University of Oslo: a

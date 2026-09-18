@@ -1,10 +1,13 @@
-"""Parts for any recording, speaker roles, and the automatic stage filter, on synthetic input."""
+"""Parts for any recording, speaker roles, the automatic stage filter and the plan table, on synthetic input."""
+import json
+
 import numpy as np
 
 from avsegmenter.fusion import Segment
 from avsegmenter.parts import find_parts, title_parts
 from avsegmenter.speakers import suggest_roles, speaker_of
 from avsegmenter.performers import raised_stage
+from avsegmenter.report import build_report
 
 
 def _concert():
@@ -57,3 +60,40 @@ def test_raised_stage_from_detections():
     stage = {"frames": [{"t": t, "boxes": [[0.3, 0.2, 0.45, 0.8, 0.9], [0.2, 0.8, 0.3, 1.0, 0.8]]} for t in range(20)]}
     hall = {"frames": [{"t": t, "boxes": [[0.1, 0.62, 0.25, 0.95, 0.9]]} for t in range(20)]}
     assert raised_stage(stage) is True and raised_stage(hall) is False and raised_stage({"frames": []}) is False
+
+
+def _talk_analysis(tmp_path):
+    """A defence: four parts aligned to four acts, no pieces, as the talk profile writes it."""
+    acts = [{"nr": str(i + 1), "act": t, "performers": "", "work": "", "composer": ""}
+            for i, t in enumerate(["Trial lecture", "Thesis introduction", "First opponent", "Second opponent"])]
+    parts = [{"kind": "break", "start": 0, "end": 165, "cues": ["break"], "title": "Break"}]
+    for i, a in enumerate(acts):
+        parts.append({"kind": "part", "id": f"part-{i + 1}", "index": i + 1, "start": 165 + i * 2400,
+                      "end": 165 + (i + 1) * 2400, "duration": 2400, "cues": ["applause"],
+                      "title": a["act"], "plan": a, "speech_share": 0.96})
+    d = {"title": "Defence", "video": {"file": "d.mp4", "duration": 9765.0, "url": "d.mp4"},
+         "segments": [{"id": "seg-0", "start": 0, "end": 9765.0, "kind": "speech", "title": None}],
+         "pieces": [], "parts": parts, "speakers": {}, "summary": {"speech": 9600.0},
+         "programme": {"source": "programme.json", "acts": acts, "aligned_to": "parts",
+                       "assignments": {f"part-{i + 1}": i for i in range(4)}, "not_detected": []}}
+    (tmp_path / "segments.json").write_text(json.dumps(d))
+    return tmp_path
+
+
+def test_running_order_reports_acts_aligned_to_parts_as_performed(tmp_path):
+    """The talk profile aligns acts to parts, so the plan table must read the part assignments."""
+    html = build_report(_talk_analysis(tmp_path))
+    assert "not performed" not in html, "acts aligned to parts were reported as never happening"
+    assert html.count("performed") == 4
+    assert "Trial lecture" in html and "Second opponent" in html
+
+
+def test_running_order_still_reports_an_act_with_no_part(tmp_path):
+    """A planned act that no part was assigned to is still reported as not performed."""
+    a = _talk_analysis(tmp_path)
+    d = json.loads((a / "segments.json").read_text())
+    d["programme"]["acts"].append({"nr": "5", "act": "Committee announcement", "performers": "", "work": "", "composer": ""})
+    (a / "segments.json").write_text(json.dumps(d))
+    html = build_report(a)
+    assert "not performed" in html
+    assert html.count(">performed") == 4
