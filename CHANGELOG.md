@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The running-order table of `report.build_report` read the piece assignments whatever the
   programme was aligned to, so a talk, whose acts align to parts, reported every act as never
   performed. The table now reads the unit the programme was aligned to, and says which.
+- The player asked for `crossorigin="anonymous"` on every video, which made a browser refuse to
+  play a page opened from disk. Nothing in the player reads the video's pixels, so the attribute
+  now goes on only when the media comes from another origin, where the text tracks need it.
+- The caption track named Norwegian whatever language the transcript was in. The record carries
+  the transcript language as `language`, the track names it, and a track whose language is unknown
+  names none.
+- The player's browser tab said "Concert segments" for every recording. It now carries the
+  record's title, which `--title` sets.
 
 ## [0.1.0], 2026-09-13
 

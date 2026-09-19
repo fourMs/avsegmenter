@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from lxml import etree
 
+from avsegmenter import export
 from avsegmenter.exports import build_record, write_all
 from avsegmenter.exports.validate import validate_all, validate_bag
 
@@ -68,3 +69,38 @@ def test_all_exports_are_written_and_well_formed(analysis):
     assert all(not [f for f in v if "not well-formed" in f or "missing" in f] for v in findings.values()), findings
     assert validate_bag(analysis / "bag") == []
     assert (analysis / "bag" / "data" / "concert.mp4").exists()
+
+
+def _player_data(**over):
+    d = {"title": "Public defence: a thesis", "video": {"file": "d.mp4", "duration": 60.0, "url": "../video/d.mp4"},
+         "segments": [{"id": "seg-0", "start": 0, "end": 60.0, "kind": "speech"}], "pieces": [], "parts": [],
+         "speakers": {}, "summary": {"speech": 60.0}, "captions": "captions.vtt"}
+    d.update(over)
+    return d
+
+
+def test_player_does_not_ask_for_cors_on_a_relative_video(tmp_path):
+    """crossorigin on a file:// page makes Firefox refuse the media; nothing in the player reads video pixels."""
+    html = export.write_player(_player_data(), tmp_path / "p.html", "../video/d.mp4").read_text()
+    assert "crossorigin" not in html
+
+
+def test_player_asks_for_cors_on_a_remote_video(tmp_path):
+    """A video served from another origin still needs the attribute for the text tracks."""
+    html = export.write_player(_player_data(), tmp_path / "p.html", "https://example.org/d.mp4").read_text()
+    assert 'crossorigin="anonymous"' in html
+
+
+def test_caption_language_follows_the_transcript(tmp_path):
+    """The caption track must not claim a language the transcript does not have."""
+    html = export.write_player(_player_data(language="en"), tmp_path / "p.html", "d.mp4").read_text()
+    assert 'kind="captions"' in html and 'srclang="en"' in html
+    html = export.write_player(_player_data(), tmp_path / "p.html", "d.mp4").read_text()
+    assert 'kind="captions"' in html and "srclang" not in html.split('kind="chapters"')[0]
+
+
+def test_player_page_title_is_the_recording(tmp_path):
+    """The browser tab names the recording, not the template it came from."""
+    html = export.write_player(_player_data(), tmp_path / "p.html", "d.mp4").read_text()
+    assert "<title>Public defence: a thesis</title>" in html
+    assert "Concert segments" not in html

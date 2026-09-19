@@ -237,8 +237,16 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
 
     tech = tech0
     user_meta = metadata.load_user_metadata(metadata_path)
+    # The language the transcript was actually made in, so the caption track can name it.
+    lang = None
+    if full.exists():
+        lang = json.loads(full.read_text()).get("language")
+    elif tr:
+        lang = next((v.get("language") for v in tr.values() if v.get("language")), None)
+
     data = {
         "title": title or video.stem,
+        "language": lang,
         "video": {"file": video.name, "duration": round(duration, 2), "url": video_url or video.name,
                   "width": tech.get("width"), "height": tech.get("height"), "tech": tech},
         "metadata": metadata.rights_block(piece_dicts, user_meta, dets),

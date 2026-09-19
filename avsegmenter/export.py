@@ -24,12 +24,32 @@ def write_vtt(data: dict, out: Path) -> Path:
     return out
 
 
+def _h(t: str) -> str:
+    """Escape for HTML text; titles come from a curated file and may hold & or <."""
+    return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def write_player(data: dict, out: Path, video_src: str) -> Path:
     html = (WEB / "player.html").read_text()
     js = (WEB / "segments-player.js").read_text()
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
-    track = f'<track kind="captions" src="{data["captions"]}" srclang="{(data.get("speakers") or {}).get("language") or "no"}" label="Transcript">' if data.get("captions") else ""
+    # The player draws its canvases from the record, never from the video, so the video itself needs
+    # no CORS. Asking for it on a page opened from disk makes the browser refuse to play at all, so
+    # the attribute goes on only when the media really does come from another origin, where the text
+    # tracks need it.
+    remote = video_src.startswith(("http://", "https://", "//"))
+    cors = ' crossorigin="anonymous"' if remote else ""
+    lang = data.get("language") or (data.get("speakers") or {}).get("language")
+    track = ""
+    if data.get("captions"):
+        # No language rather than a guessed one: a track that names the wrong language is worse than
+        # a track that names none.
+        track = f'<track kind="captions" src="{data["captions"]}"' + (f' srclang="{lang}"' if lang else "") + ' label="Transcript">'
     track += '<track kind="chapters" src="chapters.vtt" srclang="en" label="Chapters">'
-    html = html.replace("/*__JS__*/", js).replace("/*__DATA__*/", payload).replace("__VIDEO_SRC__", video_src).replace("<!--__TRACKS__-->", track)
+    title = _h(str(data.get("title") or out.stem))
+    html = (html.replace("/*__JS__*/", js).replace("/*__DATA__*/", payload)
+            .replace("__VIDEO_SRC__", video_src).replace("__CORS__", cors)
+            .replace("<title>Concert segments</title>", f"<title>{title}</title>")
+            .replace("<!--__TRACKS__-->", track))
     out.write_text(html)
     return out
