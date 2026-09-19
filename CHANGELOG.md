@@ -11,6 +11,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   engage, because its loudness range is content. `avsegmenter.mastering` holds the chain, the
   decision and the two ffmpeg passes, and `docs/loudness.md` the reasoning and the measurements.
 
+- `avsegmenter captions` and `avsegmenter.captions`: WebVTT for any span of a recording, so a file
+  cut out of it carries captions of its own. Cues are made into subtitles rather than left as
+  transcriber segments: two lines of 42 characters, split where a segment runs long, de-overlapped,
+  held no longer than seven seconds, and marked with the speaker where a voice takes over. On one
+  defence 41% of the raw segments ran past two lines and 19% past seven seconds. `avsegmenter cut`
+  writes one beside each part.
 - `examples/build_demo.py`: a demo folder built from an analysis, with a 720p proxy whose audio gets
   the treatment its kind deserves, the player, the report, the copied outputs and the index that
   lists the demos. The published demos had been assembled by hand and had drifted from the code.

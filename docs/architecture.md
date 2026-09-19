@@ -29,6 +29,7 @@ video ──► audio.extract_audio (MGT extract_wav) ──► 32 kHz / 22 kHz 
    chapters.vtt, captions.vtt,                        premis / jams / mets / tracks CSV / bag (BagIt)
    thumbs, videogram, motiongram,           report.build_report, docs/render_page.py
    one file per part, levelled              mastering.cut_parts (avsegmenter cut), docs/loudness.md
+   captions for a span                     captions.for_spans (avsegmenter captions)
    colourgram
         research_additions.json  ◄── avsegmenter add-track / add-tier (ELAN, CSV)
 ```

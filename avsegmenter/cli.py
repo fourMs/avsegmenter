@@ -12,10 +12,12 @@ def _subcommand(argv) -> int | None:
     from pathlib import Path
     from . import research, export
     args = list(sys.argv[1:] if argv is None else argv)
-    if not args or args[0] not in ("add-tier", "add-track", "refresh", "cut"):
+    if not args or args[0] not in ("add-tier", "add-track", "refresh", "cut", "captions"):
         return None
     if args[0] == "cut":
         return _cut(args[1:])
+    if args[0] == "captions":
+        return _captions(args[1:])
     sp = argparse.ArgumentParser(prog=f"avsegmenter {args[0]}")
     sp.add_argument("out", help="the analysis folder")
     if args[0] in ("add-tier", "add-track"):
@@ -41,6 +43,48 @@ def _subcommand(argv) -> int | None:
     return 0
 
 
+def _captions(args) -> int:
+    """``avsegmenter captions OUT ...``: a .vtt for each file cut out of the recording.
+
+    The transcript is timed against the whole recording, so a part needs its cues shifted."""
+    import json
+    from . import captions as cap
+    sp = argparse.ArgumentParser(prog="avsegmenter captions")
+    sp.add_argument("out", help="the analysis folder")
+    sp.add_argument("--index", default=None, help="JSON mapping each file to its start_s and end_s, such as trim/parts.json")
+    sp.add_argument("--span", action="append", default=[], metavar="NAME=START:END",
+                    help="one span in seconds, repeatable, for files cut outside avsegmenter")
+    sp.add_argument("--part", action="append", type=int, default=[], help="a detected part, by index")
+    sp.add_argument("--dir", default=None, help="where the .vtt files go (default: beside the index, else <out>/../trim)")
+    sp.add_argument("--speakers", default="change", choices=["change", "always", "never"],
+                    help="name a voice where it takes over (default), on every cue, or not at all")
+    a = sp.parse_args(args)
+    out = Path(a.out)
+    spans, dest = {}, Path(a.dir) if a.dir else None
+    if a.index:
+        idx = json.loads(Path(a.index).read_text())
+        for name, v in idx.items():
+            if isinstance(v, dict) and "start_s" in v:
+                spans[name] = v
+            elif isinstance(v, dict) and "offset_s" in v:      # a trims_alignment.json
+                spans[name] = {"start_s": v["offset_s"], "end_s": v["offset_s"] + v["duration_s"]}
+        dest = dest or Path(a.index).parent
+    for spec in a.span:
+        name, _, times = spec.partition("=")
+        start, _, end = times.partition(":")
+        spans[name] = {"start_s": float(start), "end_s": float(end)}
+    if a.part:
+        data = json.loads((out / "segments.json").read_text())
+        for p in (data.get("parts") or []):
+            if p.get("kind") == "part" and p.get("index") in a.part:
+                spans[f"part-{p['index']}"] = {"start_s": p["start"], "end_s": p["end"]}
+    if not spans:
+        sp.error("nothing to do: give --index, --span or --part")
+    n = cap.for_spans(out, spans, dest or out.parent / "trim", speakers=a.speakers)
+    print(f"{len(n)} caption file(s), {sum(n.values())} cues")
+    return 0
+
+
 def _cut(args) -> int:
     """``avsegmenter cut OUT --video V``: one file per part, each levelled and brought to a target.
 
@@ -58,6 +102,7 @@ def _cut(args) -> int:
     sp.add_argument("--stem", default="", help="name to put in every filename, such as a surname")
     sp.add_argument("--no-hwaccel", action="store_true", help="decode on the CPU")
     sp.add_argument("--plain", action="store_true", help="no levelling anywhere, only the loudness gain")
+    sp.add_argument("--no-captions", action="store_true", help="do not write a .vtt beside each file")
     a = sp.parse_args(args)
     out = Path(a.out)
     data = json.loads((out / "segments.json").read_text())
@@ -70,6 +115,9 @@ def _cut(args) -> int:
     dest = Path(a.dir) if a.dir else out.parent / "trim"
     idx = mastering.cut_parts(out, video, dest, target=target, pad_s=a.pad, stem=a.stem,
                               hwaccel=not a.no_hwaccel)
+    if not a.no_captions:
+        from . import captions as cap
+        cap.for_spans(out, idx, dest)
     print(f"{len(idx)} part(s) in {dest}")
     return 0
 

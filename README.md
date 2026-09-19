@@ -38,7 +38,8 @@ fast (an 87-minute concert: about three minutes plus MGT motion tracks); CPU wor
 ```bash
 avsegmenter concert.mp4 -o analysis --programme kjoreplan.docx --metadata curated.json
 avsegmenter defence.mp4 -o analysis --profile talk --programme acts.json --metadata curated.json --no-checksum
-avsegmenter cut analysis --stem laczko          # one file per part, levelled and normalised
+avsegmenter cut analysis --stem laczko          # one file per part, levelled, with its own .vtt
+avsegmenter captions analysis --index trim/parts.json   # captions for files cut elsewhere
 ```
 
 `avsegmenter cut` writes one file per part from an analysis, each measured and brought to a
@@ -48,6 +49,12 @@ defences the voices spanned 10.9 LU, several of those inside a single part. A pa
 music is given the gain and a limiter that should never engage, and nothing else, since its dynamics
 are the content. `--target` moves the target from the web figure of -16 LUFS to broadcast delivery
 at -23; `--plain` turns the levelling off everywhere. See `docs/loudness.md`.
+
+Each file gets a `.vtt` of its own, since the transcript is timed against the whole recording and a
+part cut out of it starts at zero. `avsegmenter captions` does the same for files cut with something
+else, from an index or from `--span NAME=START:END`. The cues are subtitles rather than transcriber
+output: wrapped to two lines of 42 characters, split where a segment runs past that or past seven
+seconds, never overlapping, and carrying the speaker's name where a new voice takes over.
 
 Options: `--profile concert|talk` (tuning defaults only), `--programme` (a `.docx` running-order table or
 a JSON list of acts), `--metadata curated.json` (what a person decided; never overwritten),
