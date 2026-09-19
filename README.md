@@ -38,7 +38,16 @@ fast (an 87-minute concert: about three minutes plus MGT motion tracks); CPU wor
 ```bash
 avsegmenter concert.mp4 -o analysis --programme kjoreplan.docx --metadata curated.json
 avsegmenter defence.mp4 -o analysis --profile talk --programme acts.json --metadata curated.json --no-checksum
+avsegmenter cut analysis --stem laczko          # one file per part, levelled and normalised
 ```
+
+`avsegmenter cut` writes one file per part from an analysis, each measured and brought to a
+loudness target, with the treatment the part deserves. A part that is mostly speech is levelled
+first, because people sharing one microphone in a room arrive at different levels: on the two
+defences the voices spanned 10.9 LU, several of those inside a single part. A part that is mostly
+music is given the gain and a limiter that should never engage, and nothing else, since its dynamics
+are the content. `--target` moves the target from the web figure of -16 LUFS to broadcast delivery
+at -23; `--plain` turns the levelling off everywhere. See `docs/loudness.md`.
 
 Options: `--profile concert|talk` (tuning defaults only), `--programme` (a `.docx` running-order table or
 a JSON list of acts), `--metadata curated.json` (what a person decided; never overwritten),

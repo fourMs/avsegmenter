@@ -4,6 +4,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- `avsegmenter cut`: one file per part from an analysis, each measured and brought to a loudness
+  target. A part that is mostly speech is levelled first, since people at one microphone arrive at
+  different levels; a part that is mostly music is given the gain and a limiter that should never
+  engage, because its loudness range is content. `avsegmenter.mastering` holds the chain, the
+  decision and the two ffmpeg passes, and `docs/loudness.md` the reasoning and the measurements.
+
 ### Fixed
 - The running-order table of `report.build_report` read the piece assignments whatever the
   programme was aligned to, so a talk, whose acts align to parts, reported every act as never

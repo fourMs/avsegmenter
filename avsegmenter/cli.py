@@ -6,13 +6,16 @@ from .pipeline import run
 
 
 def _subcommand(argv) -> int | None:
-    """``avsegmenter add-tier|add-track|refresh OUT ...``: research additions without re-running the analysis."""
+    """``avsegmenter add-tier|add-track|refresh|cut OUT ...``: work on an analysis folder without
+    re-running it."""
     import json, sys
     from pathlib import Path
     from . import research, export
     args = list(sys.argv[1:] if argv is None else argv)
-    if not args or args[0] not in ("add-tier", "add-track", "refresh"):
+    if not args or args[0] not in ("add-tier", "add-track", "refresh", "cut"):
         return None
+    if args[0] == "cut":
+        return _cut(args[1:])
     sp = argparse.ArgumentParser(prog=f"avsegmenter {args[0]}")
     sp.add_argument("out", help="the analysis folder")
     if args[0] in ("add-tier", "add-track"):
@@ -35,6 +38,39 @@ def _subcommand(argv) -> int | None:
     from .exports import write_all
     write_all(out, None, base_url=data.get("base_url"), with_checksum=False, log=lambda *x: None)
     print(f"refreshed {out}/segments.json, player.html and export/")
+    return 0
+
+
+def _cut(args) -> int:
+    """``avsegmenter cut OUT --video V``: one file per part, each levelled and brought to a target.
+
+    Speech and music are treated differently, since a leveller that helps a panel ruins a crescendo;
+    see ``avsegmenter.mastering``."""
+    import json
+    from . import mastering
+    sp = argparse.ArgumentParser(prog="avsegmenter cut")
+    sp.add_argument("out", help="the analysis folder")
+    sp.add_argument("--video", default=None, help="the recording (default: the one the analysis names)")
+    sp.add_argument("--dir", default=None, help="where the files go (default: <out>/../trim)")
+    sp.add_argument("--target", type=float, default=-16.0, help="integrated loudness in LUFS (broadcast delivery: -23)")
+    sp.add_argument("--true-peak", type=float, default=-1.5, help="ceiling in dBTP")
+    sp.add_argument("--pad", type=float, default=0.0, help="seconds of air at each end of a part")
+    sp.add_argument("--stem", default="", help="name to put in every filename, such as a surname")
+    sp.add_argument("--no-hwaccel", action="store_true", help="decode on the CPU")
+    sp.add_argument("--plain", action="store_true", help="no levelling anywhere, only the loudness gain")
+    a = sp.parse_args(args)
+    out = Path(a.out)
+    data = json.loads((out / "segments.json").read_text())
+    video = Path(a.video) if a.video else (out.parent / data["video"]["file"])
+    if not video.exists():
+        sp.error(f"cannot find the recording at {video}; pass --video")
+    if a.plain:
+        mastering.LEVELLER = ""
+    target = mastering.Target(i=a.target, tp=a.true_peak)
+    dest = Path(a.dir) if a.dir else out.parent / "trim"
+    idx = mastering.cut_parts(out, video, dest, target=target, pad_s=a.pad, stem=a.stem,
+                              hwaccel=not a.no_hwaccel)
+    print(f"{len(idx)} part(s) in {dest}")
     return 0
 
 
