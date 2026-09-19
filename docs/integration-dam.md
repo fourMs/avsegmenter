@@ -30,8 +30,10 @@ catalog uses. Re-running after edits to `curated.json` takes about a minute (eve
 
 Three levels, any of which works on its own:
 
-1. Chapters only: add `<track kind="chapters" src="…/analysis/chapters.vtt" srclang="no" default>`
-   to the video element.
+1. Chapters only: add `<track kind="chapters" src="…/analysis/chapters.vtt" srclang="en" default>`
+   to the video element. The chapter titles are written in English; a caption track takes its
+   `srclang` from the `language` field of the record, which is the language the transcript was made
+   in, and carries none when that is unknown.
 2. Timeline component: load `segments-player.js` and call
    `SegmentsPlayer.mount({ video, url: '…/analysis/segments.json', container, assetBase: '…/analysis/' })`
    in the client component that owns the video. It draws the strips, the detail panel and the metadata
