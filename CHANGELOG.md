@@ -11,6 +11,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   engage, because its loudness range is content. `avsegmenter.mastering` holds the chain, the
   decision and the two ffmpeg passes, and `docs/loudness.md` the reasoning and the measurements.
 
+- `examples/build_demo.py`: a demo folder built from an analysis, with a 720p proxy whose audio gets
+  the treatment its kind deserves, the player, the report, the copied outputs and the index that
+  lists the demos. The published demos had been assembled by hand and had drifted from the code.
+
 ### Fixed
 - The running-order table of `report.build_report` read the piece assignments whatever the
   programme was aligned to, so a talk, whose acts align to parts, reported every act as never
