@@ -36,8 +36,12 @@ def proxy(video: Path, out: Path, kind: str, height: int = 720, log=print) -> No
     af = (f"{pre},loudnorm=I={target.i}:TP={target.tp}:LRA={target.lra}:measured_I={m['input_i']}"
           f":measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}"
           f":offset={m['target_offset']}:linear=true")
-    subprocess.run(["ffmpeg", "-hide_banner", "-v", "error", "-y", "-hwaccel", "cuda", "-i", str(video),
-                    "-vf", f"scale=-2:{height}", "-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr",
+    # The whole picture path stays on the card. `-hwaccel cuda` on its own copies every frame back to
+    # system memory for a CPU `scale`, which measured 8.0 s against 6.8 s for `scale_cuda` on a 60 s
+    # span, and is why the scaling rather than the encoder sets the pace of this pass.
+    subprocess.run(["ffmpeg", "-hide_banner", "-v", "error", "-y",
+                    "-hwaccel", "cuda", "-hwaccel_output_format", "cuda", "-i", str(video),
+                    "-vf", f"scale_cuda=-2:{height}", "-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr",
                     "-cq", "30", "-b:v", "2000k", "-maxrate", "4M", "-bufsize", "8M",
                     "-af", af, "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)],
                    check=True)
