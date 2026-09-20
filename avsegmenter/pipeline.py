@@ -253,6 +253,52 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
                 card = (held or inside[:1] or [{"text": ""}])[0]["text"]
                 intros.append({"id": pt["id"], "intro": (card + " . " + text) if card else text})
             part_align = programme.align(intros, acts)
+
+            # An act the projection missed, because the hall dimmed the screen for a performance,
+            # is still announced out loud. Where such an act has no part, the transcript says when
+            # it began, and the part it fell inside is cut there.
+            def intro_for(pt):
+                a, b = pt["start"] - 120.0, pt["start"] + 75.0
+                spoken = " ".join((c.get("text") or "").strip() for c in cues if c["end"] > a and c["start"] < b)
+                mid = (pt["start"] + pt["end"]) / 2.0
+                held = [s_ for s_ in slide_cues if s_["t"] <= mid <= s_.get("end", s_["t"])]
+                inside = [s_ for s_ in slide_cues if pt["start"] - 20 <= s_["t"] <= pt["end"] - 30]
+                card = (held or inside[:1] or [{"text": ""}])[0]["text"]
+                return {"id": pt["id"], "intro": (card + " . " + spoken) if card else spoken}
+
+            for _pass in range(len(acts)):
+                missing = [acts[j] for j in part_align["not_detected"]]
+                if not missing:
+                    break
+                cut_made = False
+                for act in missing:
+                    t = programme.announced_at(cues, act)
+                    if t is None:
+                        continue
+                    host = next((p for p in parts
+                                 if p["kind"] == "part" and p["start"] + 120.0 <= t <= p["end"] - 120.0), None)
+                    if host is None:
+                        continue
+                    new_part = {"start": round(t, 2), "end": host["end"], "cues": ["spoken"], "kind": "part",
+                                "content_share": host["content_share"], "speech_share": host["speech_share"],
+                                "speakers": host.get("speakers", {})}
+                    host["end"] = round(t, 2)
+                    host["duration"] = round(host["end"] - host["start"], 2)
+                    new_part["duration"] = round(new_part["end"] - new_part["start"], 2)
+                    parts.insert(parts.index(host) + 1, new_part)
+                    n = 0
+                    for p_ in parts:                       # renumber and name the parts again
+                        if p_["kind"] == "part":
+                            n += 1
+                            p_["index"] = n
+                            p_["id"] = f"part-{n}"
+                    cut_made = True
+                    log(f"7c/9 {act.get('act')} was announced at {t / 60:.0f} min but had no part; cut there")
+                    break
+                if not cut_made:
+                    break
+                part_align = programme.align([intro_for(p_) for p_ in parts if p_["kind"] == "part"], acts)
+
     partsmod.title_parts(parts, acts if acts_to == "parts" else [], dia["roles"] if dia else None,
                          assignments=(part_align or {}).get("assignments"))
     if acts and acts_to == "parts":

@@ -82,7 +82,9 @@ Parts are cut at long silences (breaks), at applause that is followed by talk, w
 arrives that then holds the floor, and at the title cards on the projection where the slides have been
 read (`--slides`, optional, needs easyocr). A card is the surest boundary there is: it changes when
 the act changes, and while it is up the act is running, so a change of voice inside its span does not
-cut. Where a running order is given, the number of acts in it is the
+cut. Where an act in the running order still has no part, because the hall dimmed the screen for a
+performance, the transcript is asked when the host announced it, and the part it falls inside is cut
+there: sound, sight and the running order each cover what the others miss. Where a running order is given, the number of acts in it is the
 number of parts to look for: a recording that comes out short is split again at the applause inside
 its longest parts, strongest burst first. That is what a mixed event needs, where a contribution is
 applauded and a performance follows rather than a speech, and it leaves a concert alone, since there

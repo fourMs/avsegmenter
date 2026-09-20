@@ -17,6 +17,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   name from the card held in the middle of it, not from either end, where the previous act's card
   may still be up or the next one's already showing. Optical character recognition is an optional
   dependency (`pip install easyocr`); without it nothing changes.
+
+- An act that the projection missed is recovered from what was said. Where the running order has an
+  act that no part carries, `programme.announced_at` slides a window along the transcript and returns
+  the moment the host named it; the part it falls inside is cut there, and the alignment runs again.
+  A hall dims the screen for a performance, and then the spoken announcement is the only record of
+  where the act began. On the opening of a research centre this recovered the percussion piece that
+  closed the evening, the one act the cards had lost, and no act was left unnamed.
 - Parts follow the running order where one is given. `find_parts(..., expect_parts=n)` splits its
   longest parts again at the applause inside them, strongest burst first, until it has as many parts
   as the running order has acts or runs out of applause to cut on, leaving at least `split_floor_s`

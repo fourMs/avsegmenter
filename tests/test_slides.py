@@ -57,3 +57,21 @@ def test_a_voice_inside_a_card_does_not_start_a_part():
              if p["kind"] == "part"]
     assert len(loud) > 1                      # the new voice looks like a part without the card
     assert len(quiet) == 1, quiet             # with the card up, it is one act
+
+
+def test_an_act_is_found_where_the_host_announces_it():
+    """The projection goes dark for a performance, and the only record is the host saying who plays."""
+    from avsegmenter.programme import announced_at
+    cues = [{"start": 0, "end": 20, "text": "takk til panelet for en interessant diskusjon"},
+            {"start": 20, "end": 40, "text": "vi skal nå høre og se Koka Nikoladse spille"},
+            {"start": 40, "end": 60, "text": "vær så god"}]
+    act = {"nr": "5", "act": "Video Percussion", "performers": "Koka Nikoladze, Norwegian Academy of Music"}
+    t = announced_at(cues, act, window_s=20)
+    assert t is not None and 20 <= t <= 60, t
+
+
+def test_an_act_nobody_names_is_not_invented():
+    from avsegmenter.programme import announced_at
+    cues = [{"start": 0, "end": 20, "text": "og så går vi videre til neste post på programmet"}]
+    act = {"nr": "5", "act": "Video Percussion", "performers": "Koka Nikoladze"}
+    assert announced_at(cues, act, window_s=20) is None

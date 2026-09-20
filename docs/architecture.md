@@ -15,7 +15,8 @@ video ──► audio.extract_audio (MGT extract_wav) ──► 32 kHz / 22 kHz 
       ├─► slides.detect_slides (easyocr, --slides)  ──► slides.json: the projection, read every 10 s
       ├─► parts.find_parts                          ──► parts and breaks (applause, breaks, voices, title cards)
       ├─► pieces / musicops.piece_descriptors       ──► instruments, genre, key, tempo, cues, fingerprint
-      ├─► programme (musiscape.setlist)             ──► acts aligned to pieces or parts
+      ├─► programme (musiscape.setlist)             ──► acts aligned to pieces or parts; an act nobody
+      │                                                  showed is looked for in what was said
       ├─► quality.loudness / quality.qc             ──► EBU R128, QC items (ffmpeg filters)
       ├─► features.audio_descriptors / picture_colour / motion_vectors ──► 1 Hz tracks (MPEG-7 names, colourgram, codec vectors)
       ├─► features.captions_vtt                     ──► captions.vtt from the transcript
