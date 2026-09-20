@@ -8,11 +8,11 @@
 | `video` | `file`, `duration`, `url`, `width`, `height`, `tech` (ffprobe: container, size_bytes, duration_s, bitrate_kbps, created, video_codec, profile, fps, pix_fmt, bit_depth, color, audio_codec, sample_rate_hz, channels, channel_layout, audio bitrates and depth) |
 | `segments[]` | `id`, `kind` (music / speech / applause / silence / other), `start`, `end`, `duration`, `confidence`, `title`, `thumbnail`, `level` (Leq/L10/L90 dBFS), `motion` (QoM share, still-camera seconds), `transcript`, `piece_index`, `part_index` |
 | `pieces[]` | one per music segment: `index`, `title`, `start`, `end`, `plan` (matched act), `performer_names_guess`, `performers` (estimate/low/high, framings, method, stage_filter), `ensemble`, `instruments[]` and `genres[]` (AudioSet label + posterior), `singing_p`, `top_tags`, `music` (tempo_bpm, pulse_R, key, key_conf, dyn_range_db, … with `tempo_reliable`/`key_reliable`), `level`, `motion`, `camera` (shots, cuts, framings, moving_share), `sub_boundaries`, `internal_cues`, `intro` (the introduction's segment and transcript), `rights` (fingerprint, AcoustID matches, note), `part_index` |
-| `parts[]` | `kind` (part / break), `index`, `start`, `end`, `duration`, `title`, `cues` (start / break / break-end / applause / speaker:Sx), `content_share`, `speech_share`, `speakers` (share of the floor), `performers`, `camera`, `plan`, `pieces` (indices inside) |
+| `parts[]` | `kind` (part / break), `index`, `id`, `start`, `end`, `duration`, `title`, `cues` (start / break / break-end / applause / `applause:split`, a boundary found on a second pass when the running order expects more parts / `slide`, a title card on the projection / speaker:Sx), `content_share`, `speech_share`, `speakers` (share of the floor), `performers`, `camera`, `plan`, `pieces` (indices inside) |
 | `speakers` | `speakers{Sx: total_s, first_at, turns, name, role}`, `roles`, `turns[]` (`speaker`, `start`, `end`, `text`) |
 | `camera` | `hop_s`, `cuts[]`, `summary` (still / moving / cut shares), `n_shots` |
 | `tracks` | `level_db` at 1 Hz, `qom` at 1 Hz (camera motion masked) |
-| `programme` | the loaded acts, `aligned_to` (pieces / parts), `assignments`, `not_detected` |
+| `programme` | the loaded acts, `aligned_to` (pieces / parts), `assignments` (part or piece id → act index), `how` (`name` where the act was named on a card or in the transcript, `order` where the running order filled a gap, `continues`), `not_detected` (acts nobody announced) |
 | `metadata` | the rights block as merged from `curated.json`: `license`, `license_url`, `rights_holder`, `privacy` (`level`, `reasons`, `note`, `suggested`), `copyrights[]`, `notes` |
 | `hierarchy`, `summary`, `videogram` | counts per level, seconds per class, the videogram file |
 | `quality` | `loudness` (EBU R128: `integrated_lufs`, `loudness_range_lu`, `true_peak_dbtp`, `momentary_lufs_1hz`) and `qc` (items with `id`, `outcome` pass / warning / info / not measured, counts and spans) |
@@ -20,6 +20,12 @@
 | `derivatives[]` | every derived file: `path`, `mimetype`, `size_bytes`, `sha256`, `generator`, `role` |
 | `captions` | `captions.vtt` when a transcript exists |
 | `research` | `tracks[]` (`id`, `label`, `kind` curve/state/image, `unit`, `hop_s`, `values`/`states`/`image`, `source`, `range`, `palette`) and `tiers[]` (`id`, `label`, `kind` interval/point, `source`, `items[]` with `start`, `end`, `label`, `attrs`, `confidence`); built-in entries are recomputed each run, entries from `research_additions.json` are kept |
+
+### `slides.json` (written by `--slides`, optional)
+
+A list of readings of the projection, `start`, `end`, `text`, `lines`, one entry per distinct slide.
+`slides.title_cues` turns it into the title cards: the cards give part boundaries and the name of the
+act in each part. Delete the file and the run falls back to sound alone.
 
 ## `curated.json` (human; never written by the analysis)
 

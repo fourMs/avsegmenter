@@ -18,6 +18,7 @@ For one recording, one folder:
 | `segments.json` | everything found: segments (music / talk / applause / silence / other), pieces with instruments, genre tags, key and tempo, people on stage; parts; speaker turns with transcript; camera cuts; technical facts |
 | `player.html` | self-contained player: video, camera-cut marks, MGT videogram, waveform coloured by segment, part bands and numbered pieces, speaker row, detail panel, metadata box, light/dark |
 | `segments-player.js` | the same timeline as a drop-in for any HTML5 `<video>` (`SegmentsPlayer.mount({video, url, container})`) |
+| `slides.json` (`--slides`) | the projection read every ten seconds: what the room could see, and the title cards that mark and name the acts |
 | `chapters.vtt`, `thumbs/`, `videogram.png` | for other players |
 | `export/` | EBUCore 1.10 (validated), IIIF Presentation 3 + Web Annotations, schema.org JSON-LD, PREMIS 3, JAMS, METS, the canonical `record.json` |
 | `bag/` (`--bag`) | a BagIt 1.0 bag for deposit, media hard-linked |

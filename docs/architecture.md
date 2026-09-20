@@ -12,7 +12,8 @@ video ──► audio.extract_audio (MGT extract_wav) ──► 32 kHz / 22 kHz 
       ├─► performers.detect_persons (MGT YOLO)      ──► persons.json
       ├─► camera.analyse_camera (MGT camera_motion) ──► camera.json: still / moving / cut, framings
       ├─► motion.motion_tracks (MGT, within budget) ──► QoM, videogram
-      ├─► parts.find_parts                          ──► parts and breaks
+      ├─► slides.detect_slides (easyocr, --slides)  ──► slides.json: the projection, read every 10 s
+      ├─► parts.find_parts                          ──► parts and breaks (applause, breaks, voices, title cards)
       ├─► pieces / musicops.piece_descriptors       ──► instruments, genre, key, tempo, cues, fingerprint
       ├─► programme (musiscape.setlist)             ──► acts aligned to pieces or parts
       ├─► quality.loudness / quality.qc             ──► EBU R128, QC items (ffmpeg filters)
@@ -39,7 +40,7 @@ exists, so a re-run after changing `curated.json` or a threshold takes about a m
 (PANNs, YOLO, proxy, camera, Whisper, diarization embeddings) run once per recording.
 
 Module map: `pipeline.run` orchestrates; `config.Config` holds every threshold; the analysis chain
-(`fusion`, `speakers`, `parts`, `performers`, `camera`, `motion`, `level`, `musicops`, `pieces`, `speech`,
+(`fusion`, `speakers`, `parts`, `slides`, `performers`, `camera`, `motion`, `level`, `musicops`, `pieces`, `speech`,
 `fingerprint`, `programme`, `metadata`, `quality`, `features`, `research`) each does one thing; `export`
 writes the web layer; `exports/` writes the standards (`record`, `ebucore`, `iiif`, `schemaorg`,
 `provenance`, `jams`, `mets`, `bag`, `validate`, `writer`); `report` writes the summary page; `cli` is
