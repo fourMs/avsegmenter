@@ -244,8 +244,13 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
             for pt in real_parts:
                 a, b = pt["start"] - 120.0, pt["start"] + 75.0      # the hand-over, then the first words
                 text = " ".join((c.get("text") or "").strip() for c in cues if c["end"] > a and c["start"] < b)
-                # the title card up at the start of the part names it better than the spoken word
-                card = " ".join(s_["text"] for s_ in slide_cues if pt["start"] - 20 <= s_["t"] <= pt["end"] - 30)
+                # The card on screen in the middle of the part names it better than the spoken word,
+                # and better than the card at either end: at the start the previous act's card may
+                # still be up, and at the end the next one's is already coming.
+                mid = (pt["start"] + pt["end"]) / 2.0
+                held = [s_ for s_ in slide_cues if s_["t"] <= mid <= s_.get("end", s_["t"])]
+                inside = [s_ for s_ in slide_cues if pt["start"] - 20 <= s_["t"] <= pt["end"] - 30]
+                card = (held or inside[:1] or [{"text": ""}])[0]["text"]
                 intros.append({"id": pt["id"], "intro": (card + " . " + text) if card else text})
             part_align = programme.align(intros, acts)
     partsmod.title_parts(parts, acts if acts_to == "parts" else [], dia["roles"] if dia else None,

@@ -13,8 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   carries eight words, so a card the hall dims for a performance still counts; a slide that comes back
   later in the evening is the house slide, not a title, and is ranked down; and where the running
   order says how many acts there were, that many of the most title-like cards are kept. While a card
-  is up the act is running, so a change of voice inside its span no longer cuts. Optical character
-  recognition is an optional dependency (`pip install easyocr`); without it nothing changes.
+  is up the act is running, so a change of voice inside its span no longer cuts. A part takes its
+  name from the card held in the middle of it, not from either end, where the previous act's card
+  may still be up or the next one's already showing. Optical character recognition is an optional
+  dependency (`pip install easyocr`); without it nothing changes.
 - Parts follow the running order where one is given. `find_parts(..., expect_parts=n)` splits its
   longest parts again at the applause inside them, strongest burst first, until it has as many parts
   as the running order has acts or runs out of applause to cut on, leaving at least `split_floor_s`
