@@ -5,6 +5,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Parts follow the running order where one is given. `find_parts(..., expect_parts=n)` splits its
+  longest parts again at the applause inside them, strongest burst first, until it has as many parts
+  as the running order has acts or runs out of applause to cut on, leaving at least `split_floor_s`
+  on each side. Applause alone still does not end a part, since at a concert the audience applauds
+  between pieces and the pieces carry that structure; a recording with no running order behaves
+  exactly as before. On the opening of a research centre, 1 h 42 min with ten acts, the detector went
+  from seven parts to ten, and the three boundaries it had been missing are the ones where a
+  performance followed the applause rather than a speech.
+
+- Acts are matched to the parts they were announced in, not to the printed order. The pipeline reads
+  the transcript around each part boundary, two minutes back and a minute and a quarter forward, and
+  asks `programme.align` which act was named there; `title_parts(..., assignments=...)` applies it,
+  and a part where no name was heard keeps a generic title rather than borrowing one. Events run in
+  a different order from their announcements: at the same opening, the printed order put both panels
+  at the end, while the first panel came fourth and a percussion piece closed the evening. Against
+  the recording, the names gave 5 of 10 parts correctly and 2 wrongly, where the printed order gave
+  4 correctly and 6 wrongly.
 - `avsegmenter cut`: one file per part from an analysis, each measured and brought to a loudness
   target. A part that is mostly speech is levelled first, since people at one microphone arrive at
   different levels; a part that is mostly music is given the gain and a limiter that should never

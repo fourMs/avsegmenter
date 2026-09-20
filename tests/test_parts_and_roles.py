@@ -25,6 +25,68 @@ def test_concert_parts_split_only_at_the_interval():
     assert parts[0]["content_share"] > 0.9
 
 
+def _ceremony():
+    """A mixed event: four short contributions, each applauded, a talk and a performance in turn.
+    Without a running order the applause before a performance is not a boundary; with one it is."""
+    segs, t = [], 0.0
+    for k in range(4):
+        segs.append(Segment(t, t + 330, "speech" if k % 2 == 0 else "music"))
+        segs.append(Segment(t + 330, t + 345, "applause"))
+        t += 345
+    segs.append(Segment(t, t + 600, "speech"))          # a panel at the end
+    return segs, t + 600
+
+
+def test_a_running_order_splits_a_mixed_event_at_the_applause():
+    segs, dur = _ceremony()
+    without = [p for p in find_parts(segs, [], dur) if p["kind"] == "part"]
+    withplan = [p for p in find_parts(segs, [], dur, expect_parts=5) if p["kind"] == "part"]
+    assert len(withplan) > len(without), (len(without), len(withplan))
+    assert len(withplan) == 5
+    assert any("applause:split" in p["cues"] for p in withplan)
+    # every boundary the split added sits at the end of an applause burst
+    ends = {round(s.end, 2) for s in segs if s.kind == "applause"}
+    for p in withplan[1:]:
+        if "applause:split" in p["cues"]:
+            assert round(p["start"], 2) in ends, p
+
+
+def test_splitting_stops_when_the_applause_runs_out():
+    segs, dur = _ceremony()
+    parts = [p for p in find_parts(segs, [], dur, expect_parts=20) if p["kind"] == "part"]
+    assert len(parts) <= 5, parts               # asked for 20, gave what the applause supports
+
+
+def test_a_split_keeps_both_sides_above_the_floor():
+    segs, dur = _ceremony()
+    parts = [p for p in find_parts(segs, [], dur, expect_parts=5, split_floor_s=600.0) if p["kind"] == "part"]
+    for p in parts:
+        assert p["duration"] >= 600.0 or p is parts[-1], p
+
+
+def test_titles_follow_what_was_announced_rather_than_the_printed_order():
+    """An event that runs in a different order from its announcement: the parts take the act that
+    was announced in them, and a part where nothing was heard keeps a generic title."""
+    parts = [{"kind": "part", "index": 1, "id": "part-1", "duration": 600, "start": 0, "end": 600},
+             {"kind": "part", "index": 2, "id": "part-2", "duration": 600, "start": 600, "end": 1200},
+             {"kind": "part", "index": 3, "id": "part-3", "duration": 600, "start": 1200, "end": 1800}]
+    acts = [{"nr": "1", "act": "Opening lecture", "performers": "Ada Lovelace"},
+            {"nr": "2", "act": "Panel", "performers": "Grace Hopper"},
+            {"nr": "3", "act": "Performance", "performers": "Clara Rockmore"}]
+    title_parts(parts, acts, assignments={"part-1": 1, "part-2": None, "part-3": 0})
+    assert parts[0]["title"] == "Panel" and parts[0]["plan"]["nr"] == "2"
+    assert parts[1]["title"] == "Part 2" and parts[1]["plan"] is None
+    assert parts[2]["title"] == "Opening lecture"
+
+
+def test_without_an_assignment_the_titles_follow_the_running_order():
+    parts = [{"kind": "part", "index": 1, "id": "part-1", "duration": 600, "start": 0, "end": 600},
+             {"kind": "part", "index": 2, "id": "part-2", "duration": 600, "start": 600, "end": 1200}]
+    acts = [{"nr": "1", "act": "First"}, {"nr": "2", "act": "Second"}]
+    title_parts(parts, acts)
+    assert [p["title"] for p in parts] == ["First", "Second"]
+
+
 def test_applause_followed_by_talk_starts_a_part():
     segs = [Segment(0, 60, "speech"), Segment(60, 900, "speech"), Segment(900, 912, "applause"), Segment(912, 1500, "speech")]
     parts = find_parts(segs, [], 1500.0)

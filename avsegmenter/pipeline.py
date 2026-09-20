@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import numpy as np
 
+from .captions import load_transcript as load_transcript_cues   # the name 'captions' is taken later in run()
 from .config import Config
 from . import audio, tagging, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod, research, quality, features
 
@@ -190,14 +191,19 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         piece_dicts.append(piece)
 
     # ---- parts for every recording: breaks, applause followed by talk, arrival of a major voice
-    parts = partsmod.find_parts(segs, dia["turns"] if dia else [], duration, gap_s=cfg.part_gap_s, min_s=cfg.part_min_s)
+    music_total = sum(s.duration for s in segs if s.kind == "music")
+    acts = programme.load_programme(programme_path) if programme_path else []
+    acts_to = "pieces" if (piece_dicts and music_total >= speech_total) else "parts"
+    # A running order tells the detector how many parts to look for; where the acts belong to the
+    # pieces instead, it says nothing about parts and the count is left alone.
+    expect = len(acts) if (acts and acts_to == "parts") else None
+    parts = partsmod.find_parts(segs, dia["turns"] if dia else [], duration, gap_s=cfg.part_gap_s,
+                                min_s=cfg.part_min_s, expect_parts=expect)
     for pt in parts:
         if pt["kind"] == "part":
             pt["speakers"] = speakers.speaker_of(dia["turns"], pt["start"], pt["end"]) if dia else {}
-    music_total = sum(s.duration for s in segs if s.kind == "music")
-    acts = programme.load_programme(programme_path) if programme_path else []
+            pt.setdefault("id", f"part-{pt['index']}")          # named here: the alignment below refers to it
     plan = None
-    acts_to = "pieces" if (piece_dicts and music_total >= speech_total) else "parts"
     if acts and acts_to == "pieces":
         al = programme.align([{"id": pc["id"], "intro": (pc["intro"] or {}).get("text")} for pc in piece_dicts], acts)
         for pc in piece_dicts:
@@ -214,15 +220,39 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
             seg_dicts[[d["id"] for d in seg_dicts].index(pc["id"])]["title"] = pc["title"]
         plan = {"source": str(programme_path), "acts": acts, "aligned_to": "pieces", "assignments": al["assignments"],
                 "not_detected": [acts[j] | {"index": j} for j in al["not_detected"]]}
-    partsmod.title_parts(parts, acts if acts_to == "parts" else [], dia["roles"] if dia else None)
+    # An act is matched to the part in which it was announced, when the names were caught on the
+    # recording. An event often runs in a different order from its announcement, and the words said
+    # in the room are the better witness; where no name is heard, the running order still decides.
+    part_align = None
     if acts and acts_to == "parts":
-        plan = {"source": str(programme_path), "acts": acts, "aligned_to": "parts",
-                "assignments": {f"part-{pt['index']}": acts.index(pt["plan"]) for pt in parts if pt.get("plan")},
-                "not_detected": [a | {"index": j} for j, a in enumerate(acts) if a not in [pt.get("plan") for pt in parts]]}
+        cues = []
+        try:
+            cues = load_transcript_cues(out_dir)
+        except FileNotFoundError:
+            cues = []
+        if cues:
+            real_parts = [pt for pt in parts if pt["kind"] == "part"]
+            intros = []
+            for pt in real_parts:
+                a, b = pt["start"] - 120.0, pt["start"] + 75.0      # the hand-over, then the first words
+                text = " ".join((c.get("text") or "").strip() for c in cues if c["end"] > a and c["start"] < b)
+                intros.append({"id": pt["id"], "intro": text})
+            part_align = programme.align(intros, acts)
+    partsmod.title_parts(parts, acts if acts_to == "parts" else [], dia["roles"] if dia else None,
+                         assignments=(part_align or {}).get("assignments"))
+    if acts and acts_to == "parts":
+        if part_align:
+            plan = {"source": str(programme_path), "acts": acts, "aligned_to": "parts",
+                    "assignments": part_align["assignments"], "how": part_align["how"],
+                    "not_detected": [acts[j] | {"index": j} for j in part_align["not_detected"]]}
+        else:
+            plan = {"source": str(programme_path), "acts": acts, "aligned_to": "parts",
+                    "assignments": {f"part-{pt['index']}": acts.index(pt["plan"]) for pt in parts if pt.get("plan")},
+                    "not_detected": [a | {"index": j} for j, a in enumerate(acts) if a not in [pt.get("plan") for pt in parts]]}
     for pt in parts:
         if pt["kind"] != "part":
             continue
-        pt["id"] = f"part-{pt['index']}"
+        pt.setdefault("id", f"part-{pt['index']}")
         if dets:
             pt["performers"] = performers.performer_counts(dets, fusion.Segment(pt["start"], pt["end"], "speech"), cfg, cam, kind="part")
         if cam:

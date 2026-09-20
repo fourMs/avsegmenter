@@ -1,9 +1,19 @@
-"""Parts of a talk-heavy recording: trial lecture, introduction, opponents, breaks.
+"""Parts of a recording: trial lecture, introduction, opponents, contributions, breaks.
 
 Boundaries come from three cues: a long non-speech gap (a break), an applause burst (the end of
 something), and a change in who dominates the floor (one opponent hands over to the next). Parts
 shorter than a few minutes are merged into their neighbours; optional plan titles are attached by
 running order.
+
+Applause alone does not end a part. At a concert the audience applauds between pieces, and the
+pieces, not the parts, carry that structure: a concert has two parts and an interval. So applause
+cuts only where talk follows it, which is the hand-over at a defence or a seminar.
+
+That rule loses a mixed event, where a contribution is applauded and a performance follows rather
+than a speech. Instead of loosening it for every recording, the detector uses the running order:
+where ``expect_parts`` says how many acts there were and the pass above has found fewer, the longest
+parts are split again at the applause inside them, strongest burst first, until the count is reached
+or there is no applause left to cut on. A recording with no running order behaves exactly as before.
 """
 from __future__ import annotations
 import numpy as np
@@ -26,12 +36,17 @@ def dominant_speaker_track(turns: list[dict], duration: float, window_s: float =
 
 
 def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: float = 90.0, min_s: float = 240.0,
-               applause_min_s: float = 5.0, speaker_min_total_s: float = 300.0, dedupe_s: float = 180.0) -> list[dict]:
+               applause_min_s: float = 5.0, speaker_min_total_s: float = 300.0, dedupe_s: float = 180.0,
+               expect_parts: int | None = None, split_floor_s: float = 120.0) -> list[dict]:
     """Parts from three cues: a silence at least ``gap_s`` long (a break; the part resumes when speech returns),
     an applause burst (the end of something), and the first sustained turn of a speaker who goes on to speak
     for at least ``speaker_min_total_s`` (an opponent taking the floor). Cues within ``dedupe_s`` of each other
     collapse into one; parts shorter than ``min_s`` merge into their neighbours; a span that is mostly
-    non-speech is a break rather than a part."""
+    non-speech is a break rather than a part.
+
+    ``expect_parts`` is the number of acts in the running order, where one is known. When the pass above
+    finds fewer parts than that, the longest parts are split again at the applause inside them, strongest
+    first, leaving at least ``split_floor_s`` on each side."""
     cuts: list[tuple[float, str]] = []
     for s in segs:                                                        # breaks: silence only (demos are 'other'/'music')
         if s.kind == "silence" and s.duration >= gap_s:
@@ -45,8 +60,13 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
         sp = sum(min(b, x.end) - max(a, x.start) for x in segs if x.kind in ("music", "speech", "applause") and x.end > a and x.start < b)
         return sp / max(1e-9, b - a)
 
-    for s in segs:                                                        # applause ends a part when talk follows it
-        if s.kind == "applause" and s.duration >= applause_min_s and talk_share(s.end, min(duration, s.end + 300)) >= 0.7:
+    applause_cues: list[tuple[float, float]] = []                         # (time, how long the applause lasted)
+    for s in segs:
+        if s.kind != "applause" or s.duration < applause_min_s:
+            continue
+        if content_share(s.end, min(duration, s.end + 300)) >= 0.5:       # something follows: a candidate boundary
+            applause_cues.append((s.end, s.duration))
+        if talk_share(s.end, min(duration, s.end + 300)) >= 0.7:          # talk follows: a boundary on its own
             cuts.append((s.end, "applause"))                              # (in a concert applause is followed by the next piece)
     if turns:                                                             # a major voice arrives
         total: dict[str, float] = {}
@@ -97,6 +117,30 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
                 continue
             del parts[k]; changed = True
             break
+    # Where the running order says how many acts there were, and the merging above has left fewer
+    # parts than that, split the longest parts again at the applause inside them. Strongest applause
+    # first: a longer burst is a surer boundary than a short one, and a part is only cut where both
+    # sides keep at least split_floor_s.
+    if expect_parts:
+        used = {round(p["start"], 2) for p in parts}
+        while len([p for p in parts if content_share(p["start"], p["end"]) >= 0.35]) < expect_parts:
+            best = None
+            for t, strength in sorted(applause_cues, key=lambda c: -c[1]):
+                if round(t, 2) in used:
+                    continue
+                host = next((p for p in parts if p["start"] + split_floor_s <= t <= p["end"] - split_floor_s), None)
+                if host is None:
+                    continue
+                if best is None or (host["end"] - host["start"]) > (best[1]["end"] - best[1]["start"]):
+                    best = (t, host, strength)
+            if best is None:
+                break
+            t, host, _ = best
+            parts.insert(parts.index(host) + 1, {"start": t, "end": host["end"], "cues": ["applause:split"]})
+            host["end"] = t
+            used.add(round(t, 2))
+            parts.sort(key=lambda p: p["start"])
+
     for pt in parts:
         pt["content_share"] = round(content_share(pt["start"], pt["end"]), 3)
         pt["speech_share"] = round(talk_share(pt["start"], pt["end"]), 3)
@@ -110,10 +154,17 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
     return parts
 
 
-def title_parts(parts: list[dict], acts: list[dict], roles: dict | None = None) -> None:
-    """Attach plan acts to the parts by running order. A short part that is almost all the chair's voice
-    (an opening, a hand-over) does not consume an act; with more parts than acts, the acts go to the longest
-    parts (in chronological order) and the rest keep generic titles; with fewer, trailing acts are unused."""
+def title_parts(parts: list[dict], acts: list[dict], roles: dict | None = None,
+                assignments: dict[str, int | None] | None = None) -> None:
+    """Attach plan acts to the parts.
+
+    With ``assignments``, a part id maps to the index of the act announced in it, worked out from what
+    was said rather than from the printed order. That matters whenever an event runs in a different
+    order from its announcement, which is common: a panel is moved, a performance closes the evening.
+
+    Without it, the acts go by running order. A short part that is almost all the chair's voice (an
+    opening, a hand-over) does not consume an act; with more parts than acts, the acts go to the longest
+    parts, in chronological order, and the rest keep generic titles; with fewer, trailing acts are unused."""
     real = [p for p in parts if p["kind"] == "part"]
     chair = {s for s, r in (roles or {}).items() if r and ("chair" in r or "host" in r)}
     for pt in parts:
@@ -124,6 +175,14 @@ def title_parts(parts: list[dict], acts: list[dict], roles: dict | None = None) 
             pt["title"] = "Chair"
     real = [p for p in real if p["title"] != "Chair"]
     if not acts or not real:
+        return
+    if assignments:
+        for pt in parts:
+            j = assignments.get(pt.get("id"))
+            if j is None or not (0 <= j < len(acts)):
+                continue
+            pt["plan"] = acts[j]
+            pt["title"] = acts[j].get("act") or acts[j].get("work") or pt["title"]
         return
     chosen = sorted(sorted(real, key=lambda p: -p["duration"])[:len(acts)], key=lambda p: p["start"])
     for pt, a in zip(chosen, acts):
