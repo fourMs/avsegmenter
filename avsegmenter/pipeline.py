@@ -7,7 +7,7 @@ import numpy as np
 
 from .captions import load_transcript as load_transcript_cues   # the name 'captions' is taken later in run()
 from .config import Config
-from . import audio, tagging, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod, research, quality, features
+from . import audio, tagging, slides as slidesmod, fusion, level, musicops, pieces, performers, speech, fingerprint, motion, export, programme, camera, metadata, speakers, parts as partsmod, research, quality, features
 
 
 def _versions() -> dict:
@@ -190,15 +190,23 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
         d["piece_index"] = n
         piece_dicts.append(piece)
 
-    # ---- parts for every recording: breaks, applause followed by talk, arrival of a major voice
+    # ---- parts for every recording: breaks, applause followed by talk, arrival of a major voice,
+    # and the title cards on the projection where a reading of them exists (avsegmenter slides)
     music_total = sum(s.duration for s in segs if s.kind == "music")
     acts = programme.load_programme(programme_path) if programme_path else []
+    slide_list, slide_cues = [], []
+    slides_file = out_dir / "slides.json"
+    if slides_file.exists():
+        slide_list = json.loads(slides_file.read_text())
+        # A running order says how many title cards to expect; without one, every card counts.
+        slide_cues = slidesmod.title_cues(slide_list, limit=len(acts) if acts else None)
+        log(f"2b/9 slides: {len(slide_list)} readings, {len(slide_cues)} title cards")
     acts_to = "pieces" if (piece_dicts and music_total >= speech_total) else "parts"
     # A running order tells the detector how many parts to look for; where the acts belong to the
     # pieces instead, it says nothing about parts and the count is left alone.
     expect = len(acts) if (acts and acts_to == "parts") else None
     parts = partsmod.find_parts(segs, dia["turns"] if dia else [], duration, gap_s=cfg.part_gap_s,
-                                min_s=cfg.part_min_s, expect_parts=expect)
+                                min_s=cfg.part_min_s, expect_parts=expect, slide_cues=slide_cues)
     for pt in parts:
         if pt["kind"] == "part":
             pt["speakers"] = speakers.speaker_of(dia["turns"], pt["start"], pt["end"]) if dia else {}
@@ -236,7 +244,9 @@ def run(video: Path, out_dir: Path, cfg: Config, video_url: str | None = None, t
             for pt in real_parts:
                 a, b = pt["start"] - 120.0, pt["start"] + 75.0      # the hand-over, then the first words
                 text = " ".join((c.get("text") or "").strip() for c in cues if c["end"] > a and c["start"] < b)
-                intros.append({"id": pt["id"], "intro": text})
+                # the title card up at the start of the part names it better than the spoken word
+                card = " ".join(s_["text"] for s_ in slide_cues if pt["start"] - 20 <= s_["t"] <= pt["end"] - 30)
+                intros.append({"id": pt["id"], "intro": (card + " . " + text) if card else text})
             part_align = programme.align(intros, acts)
     partsmod.title_parts(parts, acts if acts_to == "parts" else [], dia["roles"] if dia else None,
                          assignments=(part_align or {}).get("assignments"))

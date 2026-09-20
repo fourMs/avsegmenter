@@ -37,7 +37,8 @@ def dominant_speaker_track(turns: list[dict], duration: float, window_s: float =
 
 def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: float = 90.0, min_s: float = 240.0,
                applause_min_s: float = 5.0, speaker_min_total_s: float = 300.0, dedupe_s: float = 180.0,
-               expect_parts: int | None = None, split_floor_s: float = 120.0) -> list[dict]:
+               expect_parts: int | None = None, split_floor_s: float = 120.0,
+               slide_cues: list[dict] | None = None) -> list[dict]:
     """Parts from three cues: a silence at least ``gap_s`` long (a break; the part resumes when speech returns),
     an applause burst (the end of something), and the first sustained turn of a speaker who goes on to speak
     for at least ``speaker_min_total_s`` (an opponent taking the floor). Cues within ``dedupe_s`` of each other
@@ -46,7 +47,12 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
 
     ``expect_parts`` is the number of acts in the running order, where one is known. When the pass above
     finds fewer parts than that, the longest parts are split again at the applause inside them, strongest
-    first, leaving at least ``split_floor_s`` on each side."""
+    first, leaving at least ``split_floor_s`` on each side.
+
+    ``slide_cues`` are the title cards read off the projection (``slides.title_cues``). A hall that
+    projects the name of each act marks its boundaries better than any sound does: the slide changes
+    when the act changes, whether or not the room applauds and whether or not the host says anything.
+    While a card is up the act is running, so a change of voice inside its span does not cut."""
     cuts: list[tuple[float, str]] = []
     for s in segs:                                                        # breaks: silence only (demos are 'other'/'music')
         if s.kind == "silence" and s.duration >= gap_s:
@@ -82,11 +88,28 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
             first = next((t["start"] for t in turns if t["speaker"] == spk and t["end"] - t["start"] >= 10 and share_after(spk, t["start"]) >= 0.5), None)
             if first is not None and first > 60:
                 cuts.append((float(first), f"speaker:{spk}"))
+    if slide_cues:
+        # A card that is still up says the act is still running, whatever the voices do: a panellist
+        # who holds the floor for ten minutes is not a new part. So a voice cue inside a card's own
+        # span is dropped, while applause and breaks, which are events in the room, are kept.
+        spans = [(float(c["t"]), float(c.get("end", c["t"]))) for c in slide_cues]
+        cuts = [(t, w) for (t, w) in cuts
+                if not (w.startswith("speaker") and any(a < t < b for a, b in spans))]
+    for cue in (slide_cues or []):                                        # a new title card: an act begins
+        cuts.append((float(cue["t"]), "slide"))
     cuts.sort()
     merged: list[tuple[float, list[str]]] = []
     for c, w in cuts:
-        if merged and c - merged[-1][0] <= dedupe_s and not (w.startswith("break") or merged[-1][1][-1].startswith("break")):
-            merged[-1] = (merged[-1][0] if w.startswith("speaker") else c, merged[-1][1] + [w])   # keep the applause time
+        near = merged and c - merged[-1][0] <= dedupe_s
+        # two title cards are two acts, however close together, and a break is always its own edge
+        both_slides = w == "slide" and merged and "slide" in merged[-1][1]
+        keeps_apart = both_slides or w.startswith("break") or (merged and merged[-1][1][-1].startswith("break"))
+        if near and not keeps_apart:
+            # a title card is the surest boundary: it takes the time, and the softer cue joins it
+            time = c if (w == "slide" or w.startswith("speaker")) else merged[-1][0]
+            if w != "slide" and "slide" in merged[-1][1]:
+                time = merged[-1][0]
+            merged[-1] = (time, merged[-1][1] + [w])
         else:
             merged.append((c, [w]))
     edges = [0.0] + [c for c, _ in merged] + [duration]
@@ -104,6 +127,8 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
             d = pt["end"] - pt["start"]; talk = speech_share(pt["start"], pt["end"]) >= 0.35
             if (talk and d >= min_s) or (not talk and d >= 60.0):
                 continue
+            if "slide" in pt["cues"] and d >= split_floor_s:
+                continue          # a title card says this is an act of its own, however short
             prev = parts[k - 1] if k > 0 else None
             nxt = parts[k + 1] if k + 1 < len(parts) else None
             prev_talk = prev is not None and speech_share(prev["start"], prev["end"]) >= 0.35

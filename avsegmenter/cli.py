@@ -146,6 +146,9 @@ def main(argv=None) -> int:
     ap.add_argument("--identifier", default=None, help="persistent identifier of the recording (URN/DOI/handle)")
     ap.add_argument("--bag", action="store_true", help="also write a BagIt bag for deposit")
     ap.add_argument("--no-checksum", action="store_true", help="skip SHA-256 of the video (slow on very large files)")
+    ap.add_argument("--slides", action="store_true",
+                    help="read the projected slides first (needs easyocr) and use the title cards as part boundaries and act names")
+    ap.add_argument("--slide-crop", default=None, help="ffmpeg crop for the projection area (default: the middle of the upper half)")
     ap.add_argument("--skip", default="", help="comma list of stages to skip: video,speech,fingerprint,speakers,quality,features,export")
     a = ap.parse_args(argv)
     cfg = Config(profile=a.profile, n_speakers=a.speakers, diarize=a.diarize, device=a.device, whisper_model=a.whisper_model,
@@ -153,6 +156,13 @@ def main(argv=None) -> int:
                  whisper_language=None if a.language == "auto" else a.language, acoustid_key=a.acoustid_key)
     video = Path(a.video)
     out = Path(a.out) if a.out else video.parent / "analysis"
+    if a.slides:
+        from . import slides as slidesmod
+        out.mkdir(parents=True, exist_ok=True)
+        try:
+            slidesmod.detect_slides(video, out, crop=a.slide_crop or slidesmod.CROP)
+        except ImportError as exc:
+            print(f"slides: {exc}")
     data = run(video, out, cfg, video_url=a.video_url, title=a.title, whisper_python=a.whisper_python,
                skip=set(filter(None, a.skip.split(","))), programme_path=a.programme, metadata_path=a.metadata)
     print(f"\n{len(data['pieces'])} pieces, {len(data['segments'])} segments -> {out}/player.html")

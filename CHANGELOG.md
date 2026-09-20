@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `avsegmenter.slides` and `avsegmenter --slides`: read the projected slides and use the title cards
+  as part boundaries and act names. A hall that runs from a running order puts up a card when an act
+  begins, with the work and the people in it. It is written rather than spoken, so it survives a
+  bilingual event and a host who says nothing, and it changes exactly when the act changes. Readings
+  of one card are merged on the words they share; a card counts when it holds for twenty seconds or
+  carries eight words, so a card the hall dims for a performance still counts; a slide that comes back
+  later in the evening is the house slide, not a title, and is ranked down; and where the running
+  order says how many acts there were, that many of the most title-like cards are kept. While a card
+  is up the act is running, so a change of voice inside its span no longer cuts. Optical character
+  recognition is an optional dependency (`pip install easyocr`); without it nothing changes.
 - Parts follow the running order where one is given. `find_parts(..., expect_parts=n)` splits its
   longest parts again at the applause inside them, strongest burst first, until it has as many parts
   as the running order has acts or runs out of applause to cut on, leaving at least `split_floor_s`

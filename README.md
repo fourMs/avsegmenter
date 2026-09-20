@@ -77,8 +77,11 @@ rec = write_all(Path("analysis"), Path("concert.mp4"), base_url="https://example
 ## One hierarchy for every recording
 
 Concerts have talk in them and lectures have music in them, so nothing is gated by the profile.
-Parts are cut at long silences (breaks), at applause that is followed by talk, and where a voice
-arrives that then holds the floor. Where a running order is given, the number of acts in it is the
+Parts are cut at long silences (breaks), at applause that is followed by talk, where a voice
+arrives that then holds the floor, and at the title cards on the projection where the slides have been
+read (`--slides`, optional, needs easyocr). A card is the surest boundary there is: it changes when
+the act changes, and while it is up the act is running, so a change of voice inside its span does not
+cut. Where a running order is given, the number of acts in it is the
 number of parts to look for: a recording that comes out short is split again at the applause inside
 its longest parts, strongest burst first. That is what a mixed event needs, where a contribution is
 applauded and a performance follows rather than a speech, and it leaves a concert alone, since there
