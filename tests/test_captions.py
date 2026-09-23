@@ -73,6 +73,19 @@ def test_for_spans_writes_one_file_per_span_and_counts_the_cues(tmp_path):
     assert (tmp_path / "out" / "2-part.vtt").read_text().strip() == "WEBVTT"
 
 
+def test_a_file_joined_from_two_spans_keeps_its_captions_in_step():
+    # a stop taken out of the middle: the second span's cues start where the first span's picture ends
+    c = captions.cues_for_spans(CUES, [(100.0, 120.0), (195.0, 210.0)])
+    assert [x["text"] for x in c] == ["straddling the head of the part", "inside", "straddling the tail"]
+    assert c[-1]["start"] == pytest.approx(20.0 + 3.0) and c[-1]["end"] == pytest.approx(20.0 + 9.0)
+
+
+def test_for_spans_takes_joined_spans_from_the_index(tmp_path):
+    (tmp_path / "whisper_full.json").write_text(json.dumps({"segments": CUES}))
+    n = captions.for_spans(tmp_path, {"3-part.mp4": {"spans": [[100, 120], [195, 210]]}}, tmp_path / "trim", log=lambda *_: None)
+    assert n == {"3-part.vtt": 3} and "00:00:23.000 --> 00:00:29.000" in (tmp_path / "trim" / "3-part.vtt").read_text()
+
+
 def test_a_long_segment_is_broken_into_readable_cues():
     """A transcriber returns segments; a subtitle is at most two lines and a few seconds."""
     text = ("So that is why I think it does not matter if we have the same signal, or a different "

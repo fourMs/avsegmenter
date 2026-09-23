@@ -173,8 +173,29 @@ def write_vtt(cues: list[dict], out: Path, speakers: str | bool = "change") -> P
     return out
 
 
+def cues_for_spans(cues: list[dict], spans: list[tuple[float, float]], turns: list[dict] | None = None,
+                   names: dict | None = None) -> list[dict]:
+    """The cues of a file joined from several spans of the recording, end to end: each span's cues
+    start where the previous span's picture ends, so a stop taken out of the middle of a part leaves
+    the captions in step with the cut."""
+    out, offset = [], 0.0
+    for start, end in spans:
+        for c in cues_for_span(cues, float(start), float(end), turns, names):
+            out.append(c | {"start": c["start"] + offset, "end": c["end"] + offset})
+        offset += float(end) - float(start)
+    return out
+
+
+def _spans_of(s: dict) -> list[tuple[float, float]]:
+    """``{"spans": [[a, b], ...]}`` or the single ``{"start_s", "end_s"}``."""
+    if s.get("spans"):
+        return [(float(a), float(b)) for a, b in s["spans"]]
+    return [(float(s["start_s"]), float(s["end_s"]))]
+
+
 def for_spans(analysis_dir: Path, spans: dict, out_dir: Path, speakers: str | bool = "change", log=print) -> dict:
-    """One ``.vtt`` per span. ``spans`` maps an output stem to ``{"start_s", "end_s"}``.
+    """One ``.vtt`` per span. ``spans`` maps an output stem to ``{"start_s", "end_s"}``, or to
+    ``{"spans": [[start, end], ...]}`` for a file joined from several spans of the recording.
 
     Returns the number of cues written for each, so that a span with none is visible rather than a
     silently empty file.
@@ -190,9 +211,10 @@ def for_spans(analysis_dir: Path, spans: dict, out_dir: Path, speakers: str | bo
     out_dir.mkdir(parents=True, exist_ok=True)
     written = {}
     for stem, s in spans.items():
-        part = cues_for_span(cues, float(s["start_s"]), float(s["end_s"]), turns, names)
+        sp = _spans_of(s)
+        part = cues_for_spans(cues, sp, turns, names)
         out = out_dir / f"{Path(stem).stem}.vtt"
         write_vtt(part, out, speakers)
         written[out.name] = len(part)
-        log(f"  {out.name}: {len(part)} cues over {float(s['end_s']) - float(s['start_s']):.0f} s")
+        log(f"  {out.name}: {len(part)} cues over {sum(b - a for a, b in sp):.0f} s in {len(sp)} span(s)")
     return written

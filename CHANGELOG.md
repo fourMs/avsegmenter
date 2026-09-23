@@ -53,11 +53,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   held no longer than seven seconds, and marked with the speaker where a voice takes over. On one
   defence 41% of the raw segments ran past two lines and 19% past seven seconds. `avsegmenter cut`
   writes one beside each part.
+- `avsegmenter captions` takes a file joined from several spans of the recording, an opposition with
+  a stop taken out of its middle, as `--span NAME=START:END+START:END` or `{"spans": [[start, end],
+  ...]}` in the index, and keeps the captions in step with the cut: each span's cues start where
+  the previous span's picture ends (`captions.cues_for_spans`).
 - `examples/build_demo.py`: a demo folder built from an analysis, with a 720p proxy whose audio gets
   the treatment its kind deserves, the player, the report, the copied outputs and the index that
   lists the demos. The published demos had been assembled by hand and had drifted from the code.
 
 ### Fixed
+- A voice arrives with its first exchange, not when it first holds the floor. An opponent opens with
+  a greeting, a microphone check and a first question the candidate answers at length, and only
+  some minutes in holds half of a five-minute window; the part boundary was landing there. The
+  arrival is now the first of the speaker's own turns that lead up to the floor with no silence
+  from that speaker longer than the window, while a lone question from the hall followed by a longer
+  silence is still not an arrival. On one defence this had cut the second opposition in two, 5 min
+  and 52 min, and left the running order with five parts to name from four acts.
+- Acts are named by the names heard, not by the ordinary words in their titles: `musiscape.setlist`
+  now matches a long title only as a phrase, drops a name two acts share, treats the parts of a
+  defence as generic, and reads an introduction that names three or more acts as the programme
+  being read out. On three defences the old scoring assigned 6 of 12 parts wrongly, and the new one
+  assigns all 12 as the chair called them.
 - The running-order table of `report.build_report` read the piece assignments whatever the
   programme was aligned to, so a talk, whose acts align to parts, reported every act as never
   performed. The table now reads the unit the programme was aligned to, and says which.

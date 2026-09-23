@@ -51,9 +51,9 @@ def _captions(args) -> int:
     from . import captions as cap
     sp = argparse.ArgumentParser(prog="avsegmenter captions")
     sp.add_argument("out", help="the analysis folder")
-    sp.add_argument("--index", default=None, help="JSON mapping each file to its start_s and end_s, such as trim/parts.json")
+    sp.add_argument("--index", default=None, help="JSON mapping each file to its start_s and end_s, or to spans [[start, end], ...] for a file joined from several, such as trim/parts.json")
     sp.add_argument("--span", action="append", default=[], metavar="NAME=START:END",
-                    help="one span in seconds, repeatable, for files cut outside avsegmenter")
+                    help="one span in seconds, repeatable, for files cut outside avsegmenter; START:END+START:END for a file joined from several spans")
     sp.add_argument("--part", action="append", type=int, default=[], help="a detected part, by index")
     sp.add_argument("--dir", default=None, help="where the .vtt files go (default: beside the index, else <out>/../trim)")
     sp.add_argument("--speakers", default="change", choices=["change", "always", "never"],
@@ -64,15 +64,14 @@ def _captions(args) -> int:
     if a.index:
         idx = json.loads(Path(a.index).read_text())
         for name, v in idx.items():
-            if isinstance(v, dict) and "start_s" in v:
+            if isinstance(v, dict) and ("start_s" in v or "spans" in v):
                 spans[name] = v
             elif isinstance(v, dict) and "offset_s" in v:      # a trims_alignment.json
                 spans[name] = {"start_s": v["offset_s"], "end_s": v["offset_s"] + v["duration_s"]}
         dest = dest or Path(a.index).parent
-    for spec in a.span:
+    for spec in a.span:                                     # NAME=START:END, or START:END+START:END joined
         name, _, times = spec.partition("=")
-        start, _, end = times.partition(":")
-        spans[name] = {"start_s": float(start), "end_s": float(end)}
+        spans[name] = {"spans": [[float(t.partition(":")[0]), float(t.partition(":")[2])] for t in times.split("+")]}
     if a.part:
         data = json.loads((out / "segments.json").read_text())
         for p in (data.get("parts") or []):
