@@ -79,7 +79,8 @@ rec = write_all(Path("analysis"), Path("concert.mp4"), base_url="https://example
 
 Concerts have talk in them and lectures have music in them, so nothing is gated by the profile.
 Parts are cut at long silences (breaks), at applause that is followed by talk, where a voice
-arrives that then holds the floor, and at the title cards on the projection where the slides have been
+arrives that then holds the floor (the part begins with that voice's first exchange, the greeting
+and the microphone check, not with the first minutes it holds alone), and at the title cards on the projection where the slides have been
 read (`--slides`, optional, needs easyocr). A card is the surest boundary there is: it changes when
 the act changes, and while it is up the act is running, so a change of voice inside its span does not
 cut. Where an act in the running order still has no part, because the hall dimmed the screen for a
@@ -98,10 +99,13 @@ People on stage are counted per still camera framing (MGT `camera_motion` + `per
 widest framing for a piece, the typical one for a talk part; the audience filter is on when the
 detections show a raised stage. Programme acts go to pieces when music dominates and to parts
 otherwise, matched either way on the names heard in the introductions, with thank-yous ignored: the
-transcript around a part boundary says which act was announced there. Events run in a different order
-from their announcements often enough that the words in the room are the better witness, and a part
-where no name was heard keeps a generic title rather than borrowing one. Where there is no
-transcript, parts fall back to the running order. Acts that were never announced are reported.
+transcript around a part boundary says which act was announced there. People match on a surname, a
+long title only as a phrase, and a name two acts share names neither; a chair reading out the whole
+committee names no act, and the part takes its place in the running order unless one name follows a
+hand-over cue such as "I now call upon". Events run in a different order from their announcements
+often enough that the words in the room are the better witness, and a part where no name was heard
+keeps a generic title rather than borrowing one. Where there is no transcript, parts fall back to
+the running order. Acts that were never announced are reported.
 
 ## How the segmentation works
 

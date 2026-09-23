@@ -102,6 +102,17 @@ def test_new_voice_that_holds_the_floor_starts_a_part():
     assert len(parts) == 2 and parts[1]["start"] == 1000.0 and parts[1]["cues"] == ["speaker:S1"]
 
 
+def test_a_voice_arrives_with_its_first_exchange_not_when_it_holds_the_floor():
+    # an opponent greets, checks the microphone, asks a first question the candidate answers at length,
+    # and only from 1200 s holds half of any five-minute window; the part starts at the greeting
+    segs = [Segment(0, 2400, "speech")]
+    turns = [{"speaker": "S0", "start": 0, "end": 880},
+             {"speaker": "S1", "start": 900, "end": 910}, {"speaker": "S1", "start": 912, "end": 950},
+             {"speaker": "S0", "start": 950, "end": 1190}, {"speaker": "S1", "start": 1200, "end": 2400}]
+    parts = find_parts(segs, turns, 2400.0, min_s=120.0)
+    assert [p["start"] for p in parts] == [0.0, 900.0] and parts[1]["cues"] == ["speaker:S1"]
+
+
 def test_title_parts_skips_the_chairs_opening_and_assigns_by_order():
     parts = [{"kind": "part", "index": 1, "start": 0, "end": 200, "duration": 200, "speakers": {"S9": 0.95}},
              {"kind": "part", "index": 2, "start": 200, "end": 2000, "duration": 1800, "speakers": {"S0": 0.8}},

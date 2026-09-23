@@ -78,16 +78,30 @@ def find_parts(segs: list[Segment], turns: list[dict], duration: float, gap_s: f
         total: dict[str, float] = {}
         for t in turns:
             total[t["speaker"]] = total.get(t["speaker"], 0.0) + t["end"] - t["start"]
-        def share_after(spk: str, t0: float, win: float = 300.0) -> float:
+        window = 300.0
+
+        def share_after(spk: str, t0: float, win: float = window) -> float:
             tot_s = sum(min(t0 + win, t["end"]) - max(t0, t["start"]) for t in turns if t["speaker"] == spk and t["end"] > t0 and t["start"] < t0 + win)
             return tot_s / win
         for spk, tot in total.items():
             if tot < speaker_min_total_s:
                 continue
-            # arrival: the first turn from which this voice holds at least half of the next five minutes
+            # the floor: the first turn from which this voice holds at least half of the next five minutes
             first = next((t["start"] for t in turns if t["speaker"] == spk and t["end"] - t["start"] >= 10 and share_after(spk, t["start"]) >= 0.5), None)
-            if first is not None and first > 60:
-                cuts.append((float(first), f"speaker:{spk}"))
+            if first is None:
+                continue
+            # the arrival: an opponent opens with short exchanges, a greeting, a microphone check, a
+            # first question the candidate answers at length, and only holds the floor some minutes
+            # in. The voice arrived at the first of its own turns that lead up to the floor with no
+            # silence from it longer than the floor window; a lone question from the hall earlier in
+            # the day, followed by a longer silence, is not the arrival.
+            arrival = first
+            for t in reversed([t for t in turns if t["speaker"] == spk and t["start"] < first]):
+                if arrival - t["end"] > window:
+                    break
+                arrival = t["start"]
+            if arrival > 60:
+                cuts.append((float(arrival), f"speaker:{spk}"))
     if slide_cues:
         # A card that is still up says the act is still running, whatever the voices do: a panellist
         # who holds the floor for ten minutes is not a new part. So a voice cue inside a card's own
